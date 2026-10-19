@@ -1,0 +1,3670 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script>(function(){var V="v8";if(localStorage.getItem("_djv")!==V){localStorage.clear();sessionStorage.clear();localStorage.setItem("_djv",V);}})()</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Darlan — Tokyo Ghoul Dev Journey</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #030206;
+  --surface: #0a090f;
+  --surface2: #110f18;
+  --border: #1e1a2a;
+  --text: #e8ddd5;
+  --muted: #5a4f6a;
+  --red: #8b0000;
+  --red2: #c0392b;
+  --red3: #e74c3c;
+  --red-glow: rgba(192,57,43,0.5);
+  --red-faint: rgba(139,0,0,0.1);
+  --gold: #c9a84c;
+  --gold2: #f0c060;
+  --gold-faint: rgba(201,168,76,0.1);
+  --green: #2ecc71;
+  --purple: #6c3483;
+  --purple2: #9b59b6;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: default;
+}
+
+/* ===== TOKYO GHOUL BACKGROUND ===== */
+.tg-bg {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+}
+
+/* Kagune — full canvas */
+#kaguneCanvas {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+}
+
+/* Circuit / hex grid canvas on left side */
+#leftCanvas {
+  position: absolute; top: 0; left: 0;
+  width: 220px; height: 100%;
+}
+
+/* Sidebar ticker (scrolling text) */
+.sb-ticker-wrap {
+  overflow: hidden; height: 90px; position: relative;
+  border-top: 1px solid rgba(192,57,43,0.1);
+  padding-top: 0.5rem;
+}
+.sb-ticker {
+  display: flex; flex-direction: column; gap: 0.4rem;
+  animation: tickerScroll 18s linear infinite;
+}
+@keyframes tickerScroll {
+  0%  { transform: translateY(0); }
+  100%{ transform: translateY(-50%); }
+}
+.sb-ticker-line {
+  font-family:'Share Tech Mono',monospace; font-size:0.58rem;
+  color: rgba(192,57,43,0.45); white-space: nowrap; letter-spacing:0.04em;
+}
+.sb-ticker-line.gold { color: rgba(201,168,76,0.4); }
+
+/* Sidebar ghoul eye mini */
+.sb-eye-wrap {
+  display: flex; justify-content: center; opacity: 0.25;
+  animation: eyePulse 5s ease-in-out infinite;
+  padding: 0.3rem 0;
+}
+
+/* Ghoul eye watermark — centre, bigger & more detailed */
+.ghoul-eye-bg {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(700px, 95vw);
+  opacity: 0.055;
+  animation: eyePulse 5s ease-in-out infinite;
+}
+@keyframes eyePulse {
+  0%,100% { opacity: 0.045; transform: translate(-50%,-50%) scale(1); }
+  50%      { opacity: 0.075; transform: translate(-50%,-50%) scale(1.015); }
+}
+
+/* Blood bar at very top */
+.blood-drip {
+  position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, transparent, #c0392b 25%, #8b0000 50%, #c0392b 75%, transparent);
+  opacity: 0.7;
+}
+/* Multiple drip drops */
+.blood-drip::after {
+  content: '';
+  position: absolute; top: 100%; left: 30%;
+  width: 2px; height: 28px;
+  background: linear-gradient(180deg, #c0392b, transparent);
+  opacity: 0.5;
+  box-shadow: 200px 0 0 #c0392b, -120px 0 0 rgba(192,57,43,0.4), 420px 0 0 rgba(192,57,43,0.3);
+}
+
+/* Falling red petals */
+.petal {
+  position: absolute;
+  width: 9px; height: 13px;
+  border-radius: 50% 0 50% 0;
+  background: radial-gradient(circle at 40% 40%, #e74c3c, #8b0000);
+  opacity: 0;
+  animation: petalFall var(--pd, 7s) var(--pdl, 0s) infinite ease-in-out;
+}
+@keyframes petalFall {
+  0%   { top: -3%; opacity: 0;    transform: rotate(var(--pr,0deg)) translateX(0); }
+  8%   { opacity: 0.45; }
+  50%  { transform: rotate(calc(var(--pr,0deg) + 200deg)) translateX(var(--psx,40px)); }
+  92%  { opacity: 0.15; }
+  100% { top: 103%; opacity: 0;  transform: rotate(calc(var(--pr,0deg) + 380deg)) translateX(0); }
+}
+
+/* RC cell particles */
+.particle {
+  position: absolute; width: 3px; height: 3px; border-radius: 50%;
+  background: var(--red2); opacity: 0;
+  animation: particleDrift var(--dur, 8s) var(--delay, 0s) infinite ease-in-out;
+}
+@keyframes particleDrift {
+  0%   { opacity: 0; transform: translate(0,0) scale(0); }
+  20%  { opacity: 0.45; transform: translate(var(--tx1),var(--ty1)) scale(1); }
+  80%  { opacity: 0.2;  transform: translate(var(--tx2),var(--ty2)) scale(0.5); }
+  100% { opacity: 0;   transform: translate(var(--tx3),var(--ty3)) scale(0); }
+}
+/* Noise */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.5;
+}
+
+/* ===== SCANLINES ===== */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 2; pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+}
+
+/* ===== LAYOUT — two column ===== */
+.page-layout {
+  display: flex;
+  min-height: 100vh;
+  position: relative; z-index: 1;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  position: fixed;
+  top: 0; left: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.2rem 0.9rem;
+  border-right: 1px solid rgba(192,57,43,0.15);
+  background: linear-gradient(180deg, rgba(10,9,15,0.97) 0%, rgba(5,3,8,0.98) 100%);
+  z-index: 10;
+  gap: 1rem;
+  overflow: hidden;
+}
+/* subtle red line on left edge of sidebar */
+.sidebar::before {
+  content: '';
+  position: absolute; top: 0; left: 0;
+  width: 2px; height: 100%;
+  background: linear-gradient(180deg, transparent, #c0392b 30%, #8b0000 70%, transparent);
+  opacity: 0.5;
+}
+
+/* Sidebar logo */
+.sb-logo {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid rgba(192,57,43,0.12);
+}
+.sb-logo-mask {
+  width: 36px; height: 36px; flex-shrink: 0;
+  filter: drop-shadow(0 0 8px rgba(192,57,43,0.6));
+  animation: maskPulse 3s ease-in-out infinite;
+}
+.sb-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.38rem;
+  color: var(--red3);
+  line-height: 1.7;
+  letter-spacing: 0.08em;
+}
+
+/* Sidebar XP mini bar */
+.sb-xp-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem 0.75rem;
+  position: relative; overflow: hidden;
+}
+.sb-xp-block::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--red2), transparent);
+}
+.sb-lv { font-family:'Press Start 2P',monospace; font-size:0.52rem; color:var(--red3); margin-bottom:0.3rem; }
+.sb-name { font-size:0.78rem; color:var(--text); font-weight:700; margin-bottom:0.15rem; letter-spacing:0.05em; }
+.sb-class { font-size:0.62rem; color:var(--muted); margin-bottom:0.5rem; font-family:'Share Tech Mono',monospace; }
+.sb-bar-bg { height:4px; background:var(--surface2); border-radius:2px; overflow:hidden; }
+.sb-bar-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--red),var(--red3)); transition:width 0.5s ease; }
+.sb-xp-label { font-size:0.58rem; color:var(--muted); margin-top:0.25rem; font-family:'Share Tech Mono',monospace; }
+
+/* Sidebar nav */
+.sb-nav { display:flex; flex-direction:column; gap:0.2rem; flex:1; }
+.sb-nav-item {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.48rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent; color: var(--muted);
+  font-family: 'Rajdhani', sans-serif; font-size: 0.82rem; font-weight: 600;
+  cursor: pointer; transition: all 0.18s; text-align: left; width: 100%;
+  letter-spacing: 0.02em;
+}
+.sb-nav-item:hover { color: var(--text); background: rgba(255,255,255,0.04); border-color: rgba(192,57,43,0.15); }
+.sb-nav-item.active { background: var(--red-faint); border-color: rgba(192,57,43,0.35); color: var(--red3); }
+.sb-nav-item .sb-icon { font-size: 0.9rem; width: 18px; text-align: center; flex-shrink:0; }
+.sb-nav-item .sb-badge { margin-left:auto; font-family:'Press Start 2P',monospace; font-size:0.3rem; background:rgba(192,57,43,0.2); border-radius:3px; padding:0.1rem 0.25rem; color:var(--red3); }
+
+/* Sidebar bottom — stats chips */
+.sb-stats {
+  border-top: 1px solid rgba(192,57,43,0.1);
+  padding-top: 0.75rem;
+  display: flex; flex-direction: column; gap: 0.3rem;
+}
+.sb-stat-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.68rem; font-family:'Share Tech Mono',monospace;
+}
+.sb-stat-label { color: var(--muted); }
+.sb-stat-val { font-weight: 700; }
+
+/* Sidebar TG quote */
+.sb-quote {
+  font-size: 0.6rem; color: rgba(201,168,76,0.4);
+  font-style: italic; font-family:'Share Tech Mono',monospace;
+  line-height: 1.5; text-align: center;
+  border-top: 1px solid rgba(192,57,43,0.1);
+  padding-top: 0.65rem;
+}
+
+/* Sound btn in sidebar */
+.sb-sound {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.7rem; color: var(--muted); cursor: pointer;
+  background: none; border: none; font-family:'Rajdhani',sans-serif;
+  padding: 0.3rem 0.4rem; border-radius: 6px; transition: color 0.2s; width:100%;
+}
+.sb-sound:hover { color: var(--text); }
+
+/* ===== MAIN CONTENT ===== */
+.main-content {
+  margin-left: 220px;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== HEADER ===== */
+header {
+  padding: 1.4rem 1.8rem 1.2rem;
+  text-align: center;
+  position: relative; z-index: 1;
+  border-bottom: 1px solid rgba(139,0,0,0.25);
+  margin-bottom: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(10,9,15,0.9) 0%, transparent 100%);
+}
+header::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(139,0,0,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+/* decorative corner brackets */
+header::after {
+  content: '+ ─────────────────────────── +';
+  position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
+  font-family:'Share Tech Mono',monospace; font-size:0.55rem;
+  color: rgba(192,57,43,0.25); white-space: nowrap; letter-spacing:0.15em;
+}
+.header-logo {
+  display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 0.5rem;
+}
+.kaneki-mask {
+  width: 48px; height: 48px;
+  filter: drop-shadow(0 0 12px rgba(192,57,43,0.7));
+  animation: maskPulse 3s ease-in-out infinite;
+}
+@keyframes maskPulse {
+  0%,100% { filter: drop-shadow(0 0 10px rgba(192,57,43,0.6)); }
+  50% { filter: drop-shadow(0 0 22px rgba(192,57,43,0.9)); }
+}
+.game-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(0.55rem, 1.4vw, 0.85rem);
+  color: var(--red3);
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 30px var(--red-glow), 0 0 60px rgba(139,0,0,0.3);
+  line-height: 1.6;
+}
+.game-sub { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.06em; }
+.kaneki-quote {
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  color: rgba(201,168,76,0.45);
+  font-style: italic;
+  font-family: 'Share Tech Mono', monospace;
+  min-height: 1.1em;
+}
+
+/* ===== WRAP ===== */
+.wrap { position: relative; z-index: 1; padding: 1.2rem 1.5rem 5rem; max-width: 100%; }
+
+/* ===== NAV (mobile only) ===== */
+.nav-tabs {
+  display: flex; gap: 0.3rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 4px; margin-bottom: 1.5rem;
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none; -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+.nav-tabs::-webkit-scrollbar { display: none; }
+.nav-tab {
+  flex-shrink: 0;
+  padding: 0.52rem 0.75rem;
+  border: 1px solid transparent; border-radius: 9px;
+  background: transparent; color: var(--muted);
+  font-family: 'Rajdhani', sans-serif; font-size: 0.8rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; letter-spacing: 0.03em; text-align: center;
+  white-space: nowrap;
+}
+.nav-tab:hover { color: var(--text); background: var(--surface2); }
+.nav-tab.active { background: var(--red-faint); border-color: rgba(192,57,43,0.4); color: var(--red3); }
+
+/* glitch on game title */
+@keyframes glitch {
+  0%,95%,100% { text-shadow: 0 0 30px var(--red-glow), 0 0 60px rgba(139,0,0,0.3); transform: none; }
+  96% { text-shadow: -2px 0 #e74c3c, 2px 0 rgba(0,200,255,0.4); transform: translateX(-1px); }
+  97% { text-shadow: 2px 0 #e74c3c, -2px 0 rgba(0,200,255,0.4); transform: translateX(1px); }
+  98% { text-shadow: 0 0 30px var(--red-glow); transform: none; }
+}
+.game-title { animation: glitch 8s infinite; }
+
+/* ===== PANEL ===== */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ===== PLAYER CARD ===== */
+.player-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 1.4rem; margin-bottom: 1.1rem;
+  position: relative; overflow: hidden;
+}
+.player-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--red), var(--red2), var(--gold), var(--red2), var(--red));
+  background-size: 200%;
+  animation: borderFlow 4s linear infinite;
+}
+@keyframes borderFlow { 0% { background-position: 0%; } 100% { background-position: 200%; } }
+
+.player-row { display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap; margin-bottom: 1rem; }
+
+.avatar-wrap {
+  position: relative; flex-shrink: 0;
+}
+.avatar {
+  width: 92px; height: 92px; border-radius: 50%;
+  border: 2px solid var(--red2);
+  box-shadow: 0 0 20px var(--red-glow), inset 0 0 20px rgba(139,0,0,0.3);
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 35% 35%, #1a0308, #030206);
+  cursor: pointer; transition: transform 0.2s; overflow: visible;
+}
+.avatar:hover { transform: scale(1.06); }
+.avatar svg { width: 82px; height: 82px; }
+.avatar-level-ring {
+  position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px;
+  border-radius: 50%; border: 1.5px solid transparent; pointer-events: none;
+}
+@keyframes lvlPulse {
+  0% { box-shadow: 0 0 20px var(--red-glow); }
+  50% { box-shadow: 0 0 50px var(--red-glow), 0 0 80px rgba(201,168,76,0.5); }
+  100% { box-shadow: 0 0 20px var(--red-glow); }
+}
+.avatar.levelup { animation: lvlPulse 1s ease; }
+
+.player-name-block { flex: 1; min-width: 150px; }
+.player-name {
+  font-family: 'Press Start 2P', monospace; font-size: 0.62rem;
+  color: var(--gold); margin-bottom: 0.25rem;
+  text-shadow: 0 0 12px rgba(201,168,76,0.5);
+}
+.player-class { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.3rem; }
+.player-ghoul-type { font-size: 0.72rem; color: rgba(192,57,43,0.7); font-family: 'Share Tech Mono', monospace; }
+
+.xp-block { flex: 2; min-width: 220px; }
+.xp-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; }
+.level-badge {
+  font-family: 'Press Start 2P', monospace; font-size: 0.52rem;
+  background: var(--red-faint); border: 1px solid rgba(192,57,43,0.5);
+  color: var(--red3); padding: 0.28rem 0.65rem; border-radius: 20px;
+}
+.xp-label { font-size: 0.75rem; color: var(--muted); font-family: 'Share Tech Mono', monospace; }
+.xp-bar-bg { height: 10px; background: #0a0a0f; border-radius: 5px; border: 1px solid var(--border); overflow: hidden; }
+.xp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red), var(--red2), #ff4444);
+  border-radius: 5px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+  position: relative;
+}
+.xp-bar-fill::after {
+  content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  animation: shimmer 2.5s infinite;
+}
+@keyframes shimmer { 100% { left: 100%; } }
+
+.stats-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.stat-chip {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 0.3rem 0.65rem; font-size: 0.76rem;
+  display: flex; align-items: center; gap: 0.3rem; font-family: 'Share Tech Mono', monospace;
+}
+.stat-chip .val { color: var(--red3); font-weight: 700; }
+.streak-chip .val { color: #ff6b00; }
+
+/* ===== WEEK DOTS ===== */
+.week-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 0.9rem 1.1rem; margin-bottom: 1.1rem;
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+}
+.week-label { font-size: 0.75rem; color: var(--muted); flex: 1; font-family: 'Share Tech Mono', monospace; }
+.week-dots { display: flex; gap: 0.4rem; }
+.wdot { width: 11px; height: 11px; border-radius: 50%; background: var(--border); transition: all 0.3s; }
+.wdot.on { background: var(--red3); box-shadow: 0 0 8px var(--red-glow); }
+
+/* ===== PHASES ===== */
+.phases { display: flex; flex-direction: column; gap: 0.75rem; }
+.phase {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 13px; overflow: hidden; transition: border-color 0.3s;
+}
+.phase.completed { border-color: rgba(46,204,113,0.35); }
+.phase.internship-ready { border-color: var(--gold) !important; }
+.phase-header {
+  padding: 0.95rem 1.1rem; display: flex; align-items: center; gap: 0.85rem;
+  cursor: pointer; user-select: none; transition: background 0.2s;
+}
+.phase-header:hover { background: rgba(255,255,255,0.013); }
+.phase-icon { font-size: 1.3rem; width: 34px; text-align: center; flex-shrink: 0; }
+.phase-meta { flex: 1; }
+.phase-name { font-weight: 700; font-size: 0.9rem; letter-spacing: 0.03em; margin-bottom: 0.12rem; }
+.phase-desc { font-size: 0.73rem; color: var(--muted); }
+.phase-right { display: flex; align-items: center; gap: 0.65rem; flex-shrink: 0; }
+.phase-xp { font-family: 'Press Start 2P', monospace; font-size: 0.42rem; color: var(--gold); white-space: nowrap; }
+.ring-wrap { width: 34px; height: 34px; position: relative; flex-shrink: 0; }
+.ring-wrap svg { transform: rotate(-90deg); }
+.ring-count { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.56rem; font-weight: 700; font-family: 'Share Tech Mono', monospace; }
+.chevron { color: var(--muted); transition: transform 0.3s; font-size: 0.72rem; }
+.phase.open .chevron { transform: rotate(180deg); }
+.phase-body { display: none; padding: 0 1.1rem 1.1rem; }
+.phase.open .phase-body { display: block; }
+
+.internship-banner {
+  background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05));
+  border: 1px solid rgba(201,168,76,0.5); border-radius: 10px;
+  padding: 0.75rem 0.95rem; margin-bottom: 0.75rem;
+  font-size: 0.8rem; color: var(--gold); font-weight: 700; letter-spacing: 0.04em;
+  text-align: center; animation: goldPulse 2s ease-in-out infinite;
+}
+@keyframes goldPulse {
+  0%,100% { box-shadow: 0 0 0 rgba(201,168,76,0); }
+  50% { box-shadow: 0 0 16px rgba(201,168,76,0.2); }
+}
+.checkpoint-banner {
+  background: var(--red-faint); border: 1px solid rgba(192,57,43,0.25);
+  border-radius: 9px; padding: 0.65rem 0.95rem; margin-top: 0.75rem;
+  font-size: 0.78rem; color: var(--red3); display: flex; align-items: center; gap: 0.5rem;
+}
+
+.tasks { display: flex; flex-direction: column; gap: 0.3rem; }
+.task {
+  display: flex; align-items: flex-start; gap: 0.7rem;
+  padding: 0.6rem 0.8rem; background: var(--surface2);
+  border-radius: 8px; border: 1px solid transparent; cursor: pointer; transition: all 0.2s;
+}
+.task:hover { border-color: rgba(139,0,0,0.3); }
+.task.done { border-color: rgba(46,204,113,0.15); background: rgba(46,204,113,0.03); }
+.task.done .task-title { text-decoration: line-through; color: var(--muted); }
+.task-check {
+  width: 17px; height: 17px; border-radius: 4px; border: 2px solid var(--border);
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 0.62rem; transition: all 0.2s; margin-top: 2px;
+}
+.task.done .task-check { background: var(--green); border-color: var(--green); color: #030206; }
+.task-content { flex: 1; }
+.task-title { font-size: 0.84rem; font-weight: 600; margin-bottom: 0.07rem; }
+.task-desc { font-size: 0.7rem; color: var(--muted); }
+.task-xp { font-family: 'Press Start 2P', monospace; font-size: 0.4rem; color: var(--gold); flex-shrink: 0; margin-top: 3px; }
+.ext-badge {
+  background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.3);
+  color: var(--gold); font-size: 0.6rem; padding: 0.1rem 0.4rem; border-radius: 20px; flex-shrink: 0; margin-top: 2px;
+}
+
+/* Notes */
+.phase-notes {
+  margin-top: 0.7rem; width: 100%;
+  background: #08070e; border: 1px solid rgba(139,0,0,0.2); border-radius: 8px;
+  padding: 0.6rem 0.8rem; font-size: 0.78rem; color: var(--text);
+  font-family: 'Share Tech Mono', monospace; resize: vertical; min-height: 52px;
+  outline: none; transition: border-color 0.2s;
+}
+.phase-notes:focus { border-color: rgba(192,57,43,0.5); }
+.phase-notes::placeholder { color: var(--muted); }
+
+/* ===== STATS PANEL ===== */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 1rem; }
+@media(max-width:500px) { .stats-grid { grid-template-columns: 1fr; } }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 1rem 1.1rem; position: relative; overflow: hidden;
+}
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+.stat-card.red::before { background: var(--red2); }
+.stat-card.gold::before { background: var(--gold); }
+.stat-card.green::before { background: var(--green); }
+.stat-card.purple::before { background: var(--purple2); }
+.stat-card-label { font-size: 0.72rem; color: var(--muted); margin-bottom: 0.4rem; font-family: 'Share Tech Mono', monospace; }
+.stat-card-val { font-family: 'Press Start 2P', monospace; font-size: 1rem; }
+.stat-card-sub { font-size: 0.72rem; color: var(--muted); margin-top: 0.3rem; }
+.bar-row { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+.bar-label-row { display: flex; justify-content: space-between; font-size: 0.76rem; margin-bottom: 0.25rem; }
+.mini-bar-bg { height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
+.mini-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+
+/* weekly chart */
+.week-chart { display: flex; align-items: flex-end; gap: 0.4rem; height: 80px; margin-top: 0.5rem; }
+.week-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; height: 100%; }
+.week-bar-outer { flex: 1; width: 100%; display: flex; align-items: flex-end; }
+.week-bar-inner { width: 100%; border-radius: 3px 3px 0 0; transition: height 0.6s ease; min-height: 2px; }
+.week-bar-label { font-size: 0.58rem; color: var(--muted); font-family: 'Share Tech Mono', monospace; }
+
+/* ===== BADGES/CONQUISTAS ===== */
+.badges-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); gap: 0.7rem; }
+.badge-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 0.9rem 0.8rem; text-align: center;
+  transition: all 0.3s; position: relative; overflow: hidden;
+}
+.badge-card.unlocked { border-color: rgba(201,168,76,0.4); }
+.badge-card.secret-badge { border-color: rgba(100,80,160,0.35); background: rgba(60,40,100,0.06); }
+.badge-card.secret-badge.unlocked { border-color: rgba(160,100,255,0.7); background: rgba(100,60,200,0.1); }
+.badge-card.secret-badge.unlocked::before { background: rgba(140,80,255,0.15); }
+.badge-card.unlocked::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(201,168,76,0.08), transparent 70%);
+}
+.badge-card.locked { opacity: 0.35; filter: grayscale(0.8); }
+.badge-icon { font-size: 1.8rem; margin-bottom: 0.4rem; display: block; }
+.badge-name { font-size: 0.7rem; font-weight: 700; margin-bottom: 0.2rem; }
+.badge-desc { font-size: 0.62rem; color: var(--muted); line-height: 1.4; }
+.badge-unlocked-label { font-family: 'Press Start 2P', monospace; font-size: 0.38rem; color: var(--gold); margin-top: 0.4rem; }
+
+/* ===== DAILY MISSION ===== */
+.mission-card {
+  background: var(--surface); border: 1px solid rgba(139,0,0,0.4);
+  border-radius: 13px; padding: 1rem 1.1rem; margin-bottom: 1.1rem;
+  position: relative; overflow: hidden;
+}
+.mission-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--red), var(--red3));
+}
+.mission-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+.mission-title { font-family: 'Press Start 2P', monospace; font-size: 0.5rem; color: var(--red3); }
+.mission-refresh {
+  background: var(--red-faint); border: 1px solid rgba(192,57,43,0.3);
+  color: var(--red3); font-size: 0.72rem; font-family: 'Rajdhani', sans-serif; font-weight: 600;
+  padding: 0.25rem 0.6rem; border-radius: 6px; cursor: pointer; transition: all 0.2s;
+}
+.mission-refresh:hover { background: rgba(192,57,43,0.2); }
+.mission-tasks { display: flex; flex-direction: column; gap: 0.4rem; }
+.mission-task {
+  display: flex; align-items: center; gap: 0.7rem;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 0.55rem 0.8rem; font-size: 0.82rem;
+}
+.mission-task.done { opacity: 0.5; text-decoration: line-through; }
+.mission-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red2); flex-shrink: 0; }
+.mission-task.done .mission-dot { background: var(--green); }
+
+/* ===== POMODORO ===== */
+.pomodoro-modal {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(3,2,6,0.92); align-items: center; justify-content: center;
+}
+.pomodoro-modal.open { display: flex; }
+.pomodoro-box {
+  background: var(--surface); border: 1px solid rgba(192,57,43,0.4);
+  border-radius: 20px; padding: 2rem; text-align: center; width: 320px;
+  position: relative;
+  box-shadow: 0 0 60px rgba(139,0,0,0.3);
+}
+.pomodoro-close {
+  position: absolute; top: 1rem; right: 1rem;
+  background: none; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer;
+}
+.pomodoro-task-name { font-size: 0.8rem; color: var(--muted); margin-bottom: 1rem; font-family: 'Share Tech Mono', monospace; }
+.pomodoro-time {
+  font-family: 'Press Start 2P', monospace; font-size: 2.5rem;
+  color: var(--red3); text-shadow: 0 0 20px var(--red-glow);
+  margin-bottom: 1rem; letter-spacing: 0.1em;
+}
+.pomodoro-ring { margin: 0 auto 1rem; width: 140px; height: 140px; }
+.pomodoro-btns { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; }
+.pomo-btn {
+  font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.85rem;
+  padding: 0.5rem 1.1rem; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s;
+}
+.pomo-btn.start { background: var(--red2); color: white; }
+.pomo-btn.start:hover { background: var(--red3); }
+.pomo-btn.reset { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.pomo-session-label { font-size: 0.72rem; color: var(--muted); margin-top: 0.8rem; font-family: 'Share Tech Mono', monospace; }
+
+/* ===== CRONOGRAMA ===== */
+.day-tabs { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+.day-btn {
+  padding: 0.45rem 0.9rem; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--muted); font-family: 'Rajdhani', sans-serif;
+  font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.day-btn:hover { color: var(--text); }
+.day-btn.active { background: var(--red-faint); border-color: rgba(192,57,43,0.4); color: var(--red3); }
+.schedule-card { background: var(--surface); border: 1px solid var(--border); border-radius: 13px; padding: 1.1rem; }
+.block-item {
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.6rem 0.8rem; border-radius: 8px; margin-bottom: 0.35rem;
+  border-left: 3px solid; transition: transform 0.15s;
+}
+.block-item:hover { transform: translateX(3px); }
+.block-label { font-weight: 600; font-size: 0.86rem; }
+.block-time { font-size: 0.7rem; color: var(--muted); font-family: 'Share Tech Mono', monospace; }
+.block-dur { margin-left: auto; font-size: 0.7rem; font-weight: 700; padding: 0.12rem 0.45rem; border-radius: 5px; color: white; font-family: 'Share Tech Mono', monospace; }
+
+/* ===== INGLÊS ===== */
+.eng-prog-bar { background: #0a0a0f; border-radius: 6px; height: 8px; border: 1px solid var(--border); overflow: hidden; margin-top: 0.45rem; }
+.eng-prog-fill { height: 100%; background: linear-gradient(90deg, var(--red), var(--red3)); border-radius: 6px; transition: width 0.5s; }
+.eng-day-header { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 0.9rem 1.1rem; margin-bottom: 0.9rem; display: flex; align-items: center; gap: 0.8rem; }
+.eng-tasks { display: flex; flex-direction: column; gap: 0.35rem; }
+.eng-task {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 9px; padding: 0.65rem 0.85rem; cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: flex-start; gap: 0.7rem;
+}
+.eng-task:hover { border-color: rgba(139,0,0,0.3); }
+.eng-task.done { border-color: rgba(46,204,113,0.15); background: rgba(46,204,113,0.03); }
+.eng-task.done .eng-title { text-decoration: line-through; color: var(--muted); }
+.eng-expand { display: none; margin-top: 0.7rem; padding-top: 0.7rem; border-top: 1px solid var(--border); }
+.eng-task.expanded .eng-expand { display: block; }
+.eng-detail { font-size: 0.78rem; color: var(--muted); line-height: 1.7; margin-bottom: 0.55rem; }
+.eng-tip { background: rgba(139,0,0,0.07); border: 1px solid rgba(192,57,43,0.18); border-radius: 7px; padding: 0.55rem 0.75rem; font-size: 0.76rem; color: #c97b7b; line-height: 1.6; }
+.eng-title { font-size: 0.86rem; font-weight: 600; }
+.eng-time { font-family: 'Share Tech Mono', monospace; font-size: 0.68rem; background: var(--red-faint); color: var(--red3); padding: 0.1rem 0.4rem; border-radius: 5px; flex-shrink: 0; margin-top: 2px; }
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed; top: 1.5rem; left: 50%;
+  transform: translateX(-50%) translateY(-130px);
+  background: linear-gradient(135deg, #8b0000, var(--red2));
+  color: white; padding: 0.7rem 1.6rem; border-radius: 30px;
+  font-family: 'Press Start 2P', monospace; font-size: 0.52rem;
+  z-index: 999; transition: transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
+  box-shadow: 0 8px 40px rgba(139,0,0,0.5); white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* XP pop */
+.xp-pop {
+  position: fixed; font-family: 'Press Start 2P', monospace; font-size: 0.5rem;
+  color: var(--gold); pointer-events: none; z-index: 998;
+  animation: floatUp 1s forwards; text-shadow: 0 0 10px rgba(201,168,76,0.7);
+}
+@keyframes floatUp { 0% { opacity:1; transform:translateY(0); } 100% { opacity:0; transform:translateY(-65px); } }
+
+/* Blood splatter on level up */
+.blood-splat {
+  position: fixed; inset: 0; pointer-events: none; z-index: 997;
+  animation: splatAnim 0.8s forwards;
+}
+@keyframes splatAnim {
+  0% { opacity: 0; }
+  20% { opacity: 0.25; }
+  100% { opacity: 0; }
+}
+
+/* ===== STATS EXTRAS ===== */
+.stats-grid-6 {
+  display: grid; grid-template-columns: repeat(3,1fr); gap:0.7rem; margin-bottom:1rem;
+}
+@media(max-width:600px){ .stats-grid-6{ grid-template-columns:1fr 1fr; } }
+.stat-card-sm {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:11px; padding:0.8rem 0.9rem; position:relative; overflow:hidden;
+}
+.stat-card-sm::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.stat-card-sm.red::before{background:var(--red2);}
+.stat-card-sm.gold::before{background:var(--gold);}
+.stat-card-sm.green::before{background:var(--green);}
+.stat-card-sm.blue::before{background:#3b82f6;}
+.stat-card-sm.purple::before{background:var(--purple2);}
+.stat-card-sm.orange::before{background:#f97316;}
+.stat-card-sm-label{font-size:0.65rem;color:var(--muted);margin-bottom:0.3rem;font-family:'Share Tech Mono',monospace;}
+.stat-card-sm-val{font-family:'Press Start 2P',monospace;font-size:0.82rem;}
+.stat-card-sm-sub{font-size:0.65rem;color:var(--muted);margin-top:0.22rem;}
+
+/* Radar chart */
+.radar-wrap{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:1.1rem;margin-bottom:1rem;display:flex;flex-direction:column;align-items:center;}
+.radar-title{font-family:'Press Start 2P',monospace;font-size:0.46rem;color:var(--red3);margin-bottom:1rem;align-self:flex-start;}
+
+/* ===== HISTÓRICO ===== */
+.hist-filter-row{display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.9rem;}
+.hist-filter{padding:0.3rem 0.75rem;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:600;cursor:pointer;transition:all 0.2s;}
+.hist-filter:hover{color:var(--text);}
+.hist-filter.active{background:var(--red-faint);border-color:rgba(192,57,43,0.4);color:var(--red3);}
+.hist-day-group{margin-bottom:1.1rem;}
+.hist-day-label{font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--muted);margin-bottom:0.4rem;border-left:2px solid rgba(192,57,43,0.4);padding-left:0.5rem;}
+.hist-item{display:flex;align-items:center;gap:0.65rem;padding:0.5rem 0.8rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:0.28rem;font-size:0.78rem;transition:border-color 0.2s;}
+.hist-item:hover{border-color:rgba(192,57,43,0.25);}
+.hist-icon{font-size:0.95rem;flex-shrink:0;}
+.hist-title{flex:1;}
+.hist-time{color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:0.65rem;flex-shrink:0;}
+.hist-xp{font-family:'Press Start 2P',monospace;font-size:0.36rem;color:var(--gold);flex-shrink:0;}
+.hist-empty{font-size:0.8rem;color:var(--muted);padding:1.5rem;text-align:center;}
+
+@media (max-width: 600px) {
+  .player-row { flex-direction: column; align-items: flex-start; }
+  .stats-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 860px) {
+  .sidebar { width: 56px; padding: 0.8rem 0.4rem; }
+  .sb-title, .sb-name, .sb-class, .sb-xp-label, .sb-stat-row, .sb-quote, .sb-nav-item span:not(.sb-icon), .sb-nav-item .sb-badge { display: none; }
+  .sb-logo { justify-content: center; }
+  .sb-nav-item { justify-content: center; padding: 0.5rem; }
+  .sb-sound { justify-content: center; }
+  .sb-sound span { display: none; }
+  .main-content { margin-left: 56px; }
+}
+</style>
+</head>
+<body>
+
+<!-- TG BACKGROUND -->
+<div class="tg-bg">
+  <div class="blood-drip"></div>
+  <canvas id="kaguneCanvas"></canvas>
+  <canvas id="leftCanvas"></canvas>
+
+  <!-- Ghoul Eye — detailed Tokyo Ghoul style with slit pupil + veins -->
+  <svg class="ghoul-eye-bg" viewBox="0 0 700 460" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="irisGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="#ff2200" stop-opacity="1"/>
+        <stop offset="40%"  stop-color="#c0392b" stop-opacity="0.95"/>
+        <stop offset="75%"  stop-color="#8b0000" stop-opacity="0.9"/>
+        <stop offset="100%" stop-color="#4a0000" stop-opacity="0.7"/>
+      </radialGradient>
+      <radialGradient id="glowGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="#c0392b" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#8b0000" stop-opacity="0"/>
+      </radialGradient>
+      <filter id="eyeBlur">
+        <feGaussianBlur stdDeviation="3"/>
+      </filter>
+    </defs>
+
+    <!-- outer glow -->
+    <ellipse cx="350" cy="230" rx="330" ry="210" fill="url(#glowGrad)" filter="url(#eyeBlur)"/>
+
+    <!-- eyelid shape — upper curve -->
+    <path d="M20,230 Q175,30 350,15 Q525,30 680,230" fill="none" stroke="#c0392b" stroke-width="3.5"/>
+    <!-- eyelid shape — lower curve -->
+    <path d="M20,230 Q175,430 350,445 Q525,430 680,230" fill="none" stroke="#c0392b" stroke-width="3.5"/>
+
+    <!-- inner eye fill -->
+    <path d="M20,230 Q175,30 350,15 Q525,30 680,230 Q525,430 350,445 Q175,430 20,230Z" fill="#0a0005" opacity="0.6"/>
+
+    <!-- iris -->
+    <circle cx="350" cy="230" r="155" fill="url(#irisGrad)"/>
+
+    <!-- iris ring detail -->
+    <circle cx="350" cy="230" r="152" fill="none" stroke="#ff3300" stroke-width="1" opacity="0.6"/>
+    <circle cx="350" cy="230" r="130" fill="none" stroke="#8b0000" stroke-width="1" opacity="0.4" stroke-dasharray="8 6"/>
+
+    <!-- iris texture lines (like TG art) -->
+    <line x1="350" y1="80"  x2="350" y2="135" stroke="#ff2200" stroke-width="1.5" opacity="0.5"/>
+    <line x1="350" y1="325" x2="350" y2="380" stroke="#ff2200" stroke-width="1.5" opacity="0.5"/>
+    <line x1="200" y1="130" x2="240" y2="170" stroke="#c0392b" stroke-width="1" opacity="0.4"/>
+    <line x1="500" y1="130" x2="460" y2="170" stroke="#c0392b" stroke-width="1" opacity="0.4"/>
+    <line x1="200" y1="330" x2="240" y2="290" stroke="#c0392b" stroke-width="1" opacity="0.4"/>
+    <line x1="500" y1="330" x2="460" y2="290" stroke="#c0392b" stroke-width="1" opacity="0.4"/>
+
+    <!-- pupil — vertical slit (Tokyo Ghoul signature) -->
+    <ellipse cx="350" cy="230" r="60"  fill="#030206"/>
+    <ellipse cx="350" cy="230" rx="22" ry="58" fill="#000000"/>
+
+    <!-- pupil slit inner glow -->
+    <ellipse cx="350" cy="230" rx="10" ry="56" fill="#1a0005" opacity="0.7"/>
+
+    <!-- specular highlights (white reflections) -->
+    <ellipse cx="395" cy="188" rx="26" ry="18" fill="white" opacity="0.35"/>
+    <ellipse cx="308" cy="268" rx="12" ry="8"  fill="white" opacity="0.15"/>
+
+    <!-- veins radiating out -->
+    <path d="M350,230 L180,130" stroke="#8b0000" stroke-width="1.2" opacity="0.35"/>
+    <path d="M350,230 L520,130" stroke="#8b0000" stroke-width="1.2" opacity="0.35"/>
+    <path d="M350,230 L180,330" stroke="#8b0000" stroke-width="1"   opacity="0.25"/>
+    <path d="M350,230 L520,330" stroke="#8b0000" stroke-width="1"   opacity="0.25"/>
+    <path d="M350,230 L200,230" stroke="#c0392b" stroke-width="1.5" opacity="0.3"/>
+    <path d="M350,230 L500,230" stroke="#c0392b" stroke-width="1.5" opacity="0.3"/>
+
+    <!-- eyelashes upper -->
+    <path d="M60,180  Q55,155 65,145"  fill="none" stroke="#c0392b" stroke-width="2" opacity="0.6"/>
+    <path d="M130,110 Q125,85 138,76"  fill="none" stroke="#c0392b" stroke-width="2" opacity="0.6"/>
+    <path d="M220,60  Q220,35 232,28"  fill="none" stroke="#c0392b" stroke-width="2" opacity="0.6"/>
+    <path d="M640,180 Q645,155 635,145" fill="none" stroke="#c0392b" stroke-width="2" opacity="0.6"/>
+    <path d="M570,110 Q575,85 562,76"  fill="none" stroke="#c0392b" stroke-width="2" opacity="0.6"/>
+    <path d="M480,60  Q480,35 468,28"  fill="none" stroke="#c0392b" stroke-width="2" opacity="0.6"/>
+  </svg>
+
+  <!-- Falling red petals -->
+  <div id="petals"></div>
+
+  <!-- RC Particles -->
+  <div id="particles"></div>
+</div>
+
+<!-- LEVEL UP BLOOD SPLAT -->
+<svg class="blood-splat" id="bloodSplat" style="display:none" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+  <circle cx="50" cy="50" r="50" fill="#8b0000" opacity="0.15"/>
+  <circle cx="50" cy="50" r="35" fill="#c0392b" opacity="0.1"/>
+</svg>
+
+<div class="page-layout">
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+  <!-- Logo -->
+  <div class="sb-logo">
+    <svg class="sb-logo-mask" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="28" cy="26" rx="22" ry="24" fill="#0a0a12"/>
+      <path d="M6,26 Q6,8 28,4 Q28,4 28,48 Q6,44 6,26Z" fill="#1a1a1a"/>
+      <path d="M6,26 Q6,8 28,4 Q28,4 28,48 Q6,44 6,26Z" fill="none" stroke="#c0392b" stroke-width="1"/>
+      <path d="M10,20 Q14,22 12,28" fill="none" stroke="#8b0000" stroke-width="1"/>
+      <circle cx="9" cy="27" r="1.5" fill="#c0392b" opacity="0.7"/>
+      <ellipse cx="34" cy="24" rx="5" ry="4" fill="#1a0000"/>
+      <ellipse cx="34" cy="24" rx="3" ry="2.5" fill="#c0392b"/>
+      <circle cx="34" cy="24" r="1.2" fill="#8b0000"/>
+      <ellipse cx="35.5" cy="22.5" rx="1" ry="0.7" fill="rgba(255,255,255,0.6)"/>
+      <path d="M8,18 Q15,4 28,2 Q38,3 46,10 Q50,16 48,24" fill="#111"/>
+      <path d="M22,4 Q24,2 26,5" fill="none" stroke="#eee" stroke-width="1.2" opacity="0.7"/>
+    </svg>
+    <div class="sb-title">DARLAN<br>DEV<br>JOURNEY</div>
+  </div>
+
+  <!-- Mini XP block -->
+  <div class="sb-xp-block">
+    <div class="sb-lv" id="sbLevel">LVL 1</div>
+    <div class="sb-name">DARLAN</div>
+    <div class="sb-class" id="sbClass">Iniciante Web Dev</div>
+    <div class="sb-bar-bg"><div class="sb-bar-fill" id="sbBar" style="width:0%"></div></div>
+    <div class="sb-xp-label" id="sbXpLabel">0 / 100 XP</div>
+  </div>
+
+  <!-- Nav items -->
+  <nav class="sb-nav">
+    <button class="sb-nav-item active" id="sbn-roadmap" onclick="switchTab('roadmap',this,'sbn-roadmap')">
+      <span class="sb-icon">⚔️</span><span>Trilha Dev</span>
+    </button>
+    <button class="sb-nav-item" id="sbn-cronograma" onclick="switchTab('cronograma',this,'sbn-cronograma')">
+      <span class="sb-icon">📅</span><span>Cronograma</span>
+    </button>
+    <button class="sb-nav-item" id="sbn-ingles" onclick="switchTab('ingles',this,'sbn-ingles')">
+      <span class="sb-icon">🇺🇸</span><span>Inglês</span>
+    </button>
+    <button class="sb-nav-item" id="sbn-stats" onclick="switchTab('stats',this,'sbn-stats')">
+      <span class="sb-icon">📊</span><span>Stats</span>
+    </button>
+    <button class="sb-nav-item" id="sbn-historico" onclick="switchTab('historico',this,'sbn-historico')">
+      <span class="sb-icon">📜</span><span>Histórico</span>
+    </button>
+    <button class="sb-nav-item" id="sbn-conquistas" onclick="switchTab('conquistas',this,'sbn-conquistas')">
+      <span class="sb-icon">🏆</span><span>Conquistas</span><span class="sb-badge" id="sbBadgeCount"></span>
+    </button>
+    <button class="sb-nav-item" id="sbn-card" onclick="switchTab('card',this,'sbn-card')">
+      <span class="sb-icon">🃏</span><span>Card</span>
+    </button>
+  </nav>
+
+  <!-- Bottom stats -->
+  <div class="sb-stats">
+    <div class="sb-stat-row">
+      <span class="sb-stat-label">✅ tarefas</span>
+      <span class="sb-stat-val" id="sbDone" style="color:var(--green)">0</span>
+    </div>
+    <div class="sb-stat-row">
+      <span class="sb-stat-label">🔥 streak</span>
+      <span class="sb-stat-val" id="sbStreak" style="color:var(--red3)">0d</span>
+    </div>
+    <div class="sb-stat-row">
+      <span class="sb-stat-label">⚡ XP</span>
+      <span class="sb-stat-val" id="sbXp" style="color:var(--gold)">0</span>
+    </div>
+  </div>
+
+  <!-- Mini Ghoul Eye -->
+  <div class="sb-eye-wrap">
+    <svg width="52" height="32" viewBox="0 0 700 460" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="350" cy="230" r="200" fill="#1a0000"/>
+      <ellipse cx="350" cy="230" r="155" fill="#c0392b"/>
+      <ellipse cx="350" cy="230" rx="22" ry="58" fill="#000"/>
+      <ellipse cx="395" cy="188" rx="26" ry="18" fill="white" opacity="0.35"/>
+    </svg>
+  </div>
+
+  <!-- Scrolling ticker -->
+  <div class="sb-ticker-wrap">
+    <div class="sb-ticker">
+      <div class="sb-ticker-line">// RC_CELLS: ACTIVE</div>
+      <div class="sb-ticker-line gold">✦ XP ACUMULANDO</div>
+      <div class="sb-ticker-line">// KAGUNE: RINKAKU</div>
+      <div class="sb-ticker-line">☩ CCG: EVITADO</div>
+      <div class="sb-ticker-line gold">// STACK: FULL</div>
+      <div class="sb-ticker-line">// HTML → CSS → JS</div>
+      <div class="sb-ticker-line gold">✦ COMMIT: DIÁRIO</div>
+      <div class="sb-ticker-line">// GHOUL_MODE: ON</div>
+      <!-- duplicate for seamless loop -->
+      <div class="sb-ticker-line">// RC_CELLS: ACTIVE</div>
+      <div class="sb-ticker-line gold">✦ XP ACUMULANDO</div>
+      <div class="sb-ticker-line">// KAGUNE: RINKAKU</div>
+      <div class="sb-ticker-line">☩ CCG: EVITADO</div>
+      <div class="sb-ticker-line gold">// STACK: FULL</div>
+      <div class="sb-ticker-line">// HTML → CSS → JS</div>
+      <div class="sb-ticker-line gold">✦ COMMIT: DIÁRIO</div>
+      <div class="sb-ticker-line">// GHOUL_MODE: ON</div>
+    </div>
+  </div>
+
+  <!-- TG quote -->
+  <div class="sb-quote" id="sbQuote">"HTML é o osso.<br>CSS é a carne.<br>JS é o kagune."</div>
+
+  <button class="sb-sound" style="color:#c0392b;border-color:rgba(192,57,43,0.35);margin-bottom:4px" onclick="resetProgress()">🗑 Reset</button>
+  <!-- Sound toggle -->
+  <button class="sb-sound" onclick="toggleSound()">
+    <span id="soundBtn">🔇</span><span> Som</span>
+  </button>
+</aside>
+
+<!-- ===== MAIN CONTENT ===== -->
+<div class="main-content">
+
+<header>
+  <div class="header-logo">
+    <div>
+      <div class="game-title">☩ DARLAN — TOKYO GHOUL DEV JOURNEY ☩</div>
+    </div>
+  </div>
+  <div class="game-sub">Trilha Full Stack · Inglês · Cronograma · Sistema de XP</div>
+  <div class="kaneki-quote" id="kanekiQuote">"Eu não sou nem humano nem ghoul. Sou Ken Kaneki."</div>
+</header>
+
+<div class="wrap">
+  <!-- NAV (hidden on wide screens — sidebar takes over; visible on mobile) -->
+  <div class="nav-tabs" id="mobileNav" style="display:none">
+    <button class="nav-tab active" onclick="switchTab('roadmap',this)">⚔️</button>
+    <button class="nav-tab" onclick="switchTab('cronograma',this)">📅</button>
+    <button class="nav-tab" onclick="switchTab('ingles',this)">🇺🇸</button>
+    <button class="nav-tab" onclick="switchTab('stats',this)">📊</button>
+    <button class="nav-tab" onclick="switchTab('historico',this)">📜</button>
+    <button class="nav-tab" onclick="switchTab('conquistas',this)">🏆</button>
+    <button class="nav-tab" onclick="switchTab('card',this)">🃏</button>
+  </div>
+
+  <!-- ===== ROADMAP ===== -->
+  <div class="panel active" id="panel-roadmap">
+
+    <!-- Player Card -->
+    <div class="player-card">
+      <div class="player-row">
+        <div class="avatar-wrap">
+          <div class="avatar" id="avatarWrap" title="Clique para atacar!">
+            <canvas id="charCanvas" width="80" height="80" style="image-rendering:pixelated;image-rendering:crisp-edges;cursor:pointer;" onclick="triggerAttack()"></canvas>
+          </div>
+          <div style="display:flex;gap:0.3rem;justify-content:center;margin-top:0.3rem;">
+            <button onclick="triggerAttack()" style="font-family:'Share Tech Mono',monospace;font-size:0.48rem;padding:0.18rem 0.45rem;border-radius:4px;border:1px solid rgba(192,57,43,0.4);background:rgba(192,57,43,0.08);color:rgba(192,57,43,0.7);cursor:pointer;">⚔ atacar</button>
+            <button onclick="triggerSnap()"  style="font-family:'Share Tech Mono',monospace;font-size:0.48rem;padding:0.18rem 0.45rem;border-radius:4px;border:1px solid rgba(201,168,76,0.4);background:rgba(201,168,76,0.08);color:rgba(201,168,76,0.7);cursor:pointer;">🤌 estalar</button>
+          </div>
+        </div>
+        <div class="player-name-block">
+          <div class="player-name">DARLAN</div>
+          <div class="player-class" id="playerClass">Classe: Iniciante Web Dev</div>
+          <div class="player-ghoul-type" id="ghoulType">// Ghoul Rank: ✦ Não Classificado</div>
+        </div>
+        <div class="xp-block">
+          <div class="xp-top">
+            <span class="level-badge" id="levelBadge">LVL 1</span>
+            <span class="xp-label" id="xpText">0 / 100 XP</span>
+          </div>
+          <div class="xp-bar-bg"><div class="xp-bar-fill" id="xpBar" style="width:0%"></div></div>
+          <div style="font-size:0.7rem;color:var(--muted);margin-top:0.3rem;font-family:'Share Tech Mono',monospace" id="nextLvlHint"></div>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-chip">✅ <span class="val" id="statDone">0</span> tarefas</div>
+        <div class="stat-chip">⚡ <span class="val" id="statXP">0</span> XP total</div>
+        <div class="stat-chip streak-chip">🔥 <span class="val" id="statStreak">0</span> dias streak</div>
+        <div class="stat-chip">📅 <span class="val" id="statWeek">0</span> essa semana</div>
+      </div>
+    </div>
+
+    <!-- Daily Mission -->
+    <div class="mission-card">
+      <div class="mission-header">
+        <span class="mission-title">⚔ MISSÃO DO DIA</span>
+        <button class="mission-refresh" onclick="refreshMissions()">↺ Novas missões</button>
+      </div>
+      <div style="margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem">
+        <span style="font-size:0.6rem;color:var(--muted);font-family:'Share Tech Mono',monospace">// FASE ATIVA:</span>
+        <select id="missionPhaseSelect" onchange="onMissionPhaseChange()"
+          style="background:#0e0c14;border:1px solid rgba(192,57,43,0.35);color:var(--red3);font-family:'Share Tech Mono',monospace;font-size:0.6rem;padding:0.15rem 0.3rem;border-radius:3px;cursor:pointer;outline:none"></select>
+      </div>
+      <div class="mission-tasks" id="missionTasks"></div>
+    </div>
+
+    <!-- Week dots -->
+    <div class="week-card">
+      <div class="week-label">// STREAK SEMANAL — complete tarefas para acender</div>
+      <div class="week-dots" id="weekDots">
+        <div class="wdot" id="wd0"></div><div class="wdot" id="wd1"></div>
+        <div class="wdot" id="wd2"></div><div class="wdot" id="wd3"></div>
+        <div class="wdot" id="wd4"></div><div class="wdot" id="wd5"></div>
+        <div class="wdot" id="wd6"></div>
+      </div>
+    </div>
+
+    <div class="phases" id="phases"></div>
+  </div>
+
+  <!-- ===== CRONOGRAMA ===== -->
+  <div class="panel" id="panel-cronograma">
+    <div class="day-tabs" id="dayTabs"></div>
+    <div class="schedule-card" id="scheduleBody"></div>
+  </div>
+
+  <!-- ===== INGLÊS ===== -->
+  <div class="panel" id="panel-ingles">
+    <div class="player-card" style="margin-bottom:1rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+        <span style="font-size:0.78rem;color:var(--muted);font-family:'Share Tech Mono',monospace">// XP DE INGLÊS — conta pro nível global</span>
+        <span style="font-family:'Press Start 2P',monospace;font-size:0.48rem;color:var(--red3)" id="engPct">0%</span>
+      </div>
+      <div class="eng-prog-bar"><div class="eng-prog-fill" id="engProgFill" style="width:0%"></div></div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-top:0.35rem;font-family:'Share Tech Mono',monospace" id="engPctLabel">0 / 0 atividades</div>
+    </div>
+    <div class="day-tabs" id="engDayTabs"></div>
+    <div id="engBody"></div>
+  </div>
+
+  <!-- ===== STATS ===== -->
+  <div class="panel" id="panel-stats">
+    <!-- 6 stat cards -->
+    <div class="stats-grid-6" id="statsGrid"></div>
+
+    <!-- comparison week -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:1rem;margin-bottom:1rem;">
+      <div style="font-family:'Press Start 2P',monospace;font-size:0.46rem;color:var(--red3);margin-bottom:0.75rem;">// ESSA SEMANA VS SEMANA PASSADA</div>
+      <div id="compareRow" style="display:flex;gap:1.5rem;flex-wrap:wrap;font-size:0.8rem;font-family:'Share Tech Mono',monospace;"></div>
+    </div>
+
+    <!-- radar chart -->
+    <div class="radar-wrap">
+      <div class="radar-title">// HABILIDADES — RADAR CHART</div>
+      <svg id="radarChart" width="260" height="260" viewBox="0 0 260 260"></svg>
+    </div>
+
+    <!-- phases progress -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:1.1rem;margin-bottom:1rem;">
+      <div style="font-family:'Press Start 2P',monospace;font-size:0.46rem;color:var(--red3);margin-bottom:1rem;">// PROGRESSO POR FASE</div>
+      <div id="phasesBars"></div>
+    </div>
+
+    <!-- activity chart -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:1.1rem;">
+      <div style="font-family:'Press Start 2P',monospace;font-size:0.46rem;color:var(--red3);margin-bottom:0.8rem;">// ATIVIDADE — ÚLTIMOS 7 DIAS</div>
+      <div class="week-chart" id="weekChart"></div>
+    </div>
+  </div>
+
+  <!-- ===== HISTÓRICO ===== -->
+  <div class="panel" id="panel-historico">
+    <div style="font-family:'Press Start 2P',monospace;font-size:0.48rem;color:var(--red3);margin-bottom:0.9rem;">// HISTÓRICO DE TAREFAS</div>
+    <div class="hist-filter-row">
+      <button class="hist-filter active" onclick="filterHist('all',this)">Tudo</button>
+      <button class="hist-filter" onclick="filterHist('dev',this)">💻 Dev</button>
+      <button class="hist-filter" onclick="filterHist('eng',this)">🇺🇸 Inglês</button>
+    </div>
+    <div id="histBody"></div>
+  </div>
+
+  <!-- ===== CONQUISTAS ===== -->
+  <div class="panel" id="panel-conquistas">
+    <div style="font-family:'Press Start 2P',monospace;font-size:0.5rem;color:var(--red3);margin-bottom:1rem;">// CONQUISTAS DESBLOQUEADAS</div>
+    <div class="badges-grid" id="badgesGrid"></div>
+  </div>
+
+  <!-- ===== CARD ===== -->
+  <div class="panel" id="panel-card">
+    <div style="font-family:'Press Start 2P',monospace;font-size:0.48rem;color:var(--red3);margin-bottom:0.9rem;">// CARD DE PROGRESSO</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:1.1rem;margin-bottom:1rem;">
+      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.8rem;line-height:1.6;">Gere um card visual com seu progresso atual para compartilhar no LinkedIn, Instagram ou com amigos!</p>
+      <button onclick="generateCard()" style="background:linear-gradient(135deg,var(--red),var(--red2));border:none;color:white;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.88rem;padding:0.6rem 1.3rem;border-radius:9px;cursor:pointer;margin-bottom:0.8rem;">🎴 Gerar Card</button>
+      <div id="cardPreviewWrap" style="display:none;margin-top:0.6rem;">
+        <canvas id="shareCanvas" style="border-radius:10px;border:1px solid var(--border);max-width:100%;display:block;"></canvas>
+        <p style="font-size:0.72rem;color:var(--muted);margin-top:0.5rem;">💡 Clique com o botão direito → "Salvar imagem" para baixar!</p>
+      </div>
+    </div>
+    <!-- Estimativa de estágio -->
+    <div style="background:var(--surface);border:1px solid rgba(201,168,76,0.3);border-radius:13px;padding:1.1rem;">
+      <div style="font-family:'Press Start 2P',monospace;font-size:0.46rem;color:var(--gold);margin-bottom:0.8rem;">// ESTIMATIVA DE ESTÁGIO</div>
+      <div id="estimateBody" style="font-size:0.8rem;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- POMODORO MODAL -->
+<div class="pomodoro-modal" id="pomodoroModal">
+  <div class="pomodoro-box">
+    <button class="pomodoro-close" onclick="closePomo()">✕</button>
+    <div style="font-family:'Press Start 2P',monospace;font-size:0.55rem;color:var(--red3);margin-bottom:0.5rem;">⏱ POMODORO</div>
+    <div class="pomodoro-task-name" id="pomoTaskName">Selecione uma tarefa</div>
+    <svg class="pomodoro-ring" viewBox="0 0 120 120">
+      <circle cx="60" cy="60" r="52" fill="none" stroke="#1e1a2a" stroke-width="8"/>
+      <circle id="pomoRing" cx="60" cy="60" r="52" fill="none" stroke="#c0392b" stroke-width="8" stroke-linecap="round"
+        transform="rotate(-90 60 60)" stroke-dasharray="327" stroke-dashoffset="0"/>
+    </svg>
+    <div class="pomodoro-time" id="pomoTime">25:00</div>
+    <div class="pomodoro-btns">
+      <button class="pomo-btn start" id="pomoStartBtn" onclick="togglePomo()">▶ INICIAR</button>
+      <button class="pomo-btn reset" onclick="resetPomo()">↺ RESET</button>
+    </div>
+    <div class="pomo-session-label" id="pomoSessionLabel">Sessão 1 de 4</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="undoBar" style="display:none;position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%);z-index:999;background:#1a1520;border:1px solid rgba(192,57,43,0.4);border-radius:10px;padding:0.5rem 1rem;display:none;align-items:center;gap:0.8rem;font-size:0.78rem;box-shadow:0 4px 20px rgba(0,0,0,0.5);">
+  <span id="undoMsg">Tarefa desmarcada</span>
+  <button onclick="doUndo()" style="background:var(--red-faint);border:1px solid rgba(192,57,43,0.5);color:var(--red3);padding:0.25rem 0.65rem;border-radius:6px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;font-size:0.78rem;">↩ Desfazer</button>
+</div>
+
+<script>
+// ============ KANEKI QUOTES ============
+const QUOTES = [
+  '"Eu não sou nem humano nem ghoul. Sou Ken Kaneki."',
+  '"Se você quer sobreviver, precisa se tornar mais forte."',
+  '"Às vezes o que parece dor é, na verdade, crescimento."',
+  '"Nada começa do nada. O esforço nunca trai."',
+  '"A fraqueza é um crime. Não quero ser criminoso."',
+  '"Ferir a alguém ou ser ferido — nenhum dos dois é bom."',
+  '"Todo nível que você sobe é cicatriz que virou força."',
+  '"Debug é como arrancar a máscara do código."',
+  '"HTML é o osso. CSS é a carne. JS é o kagune."',
+  '"Cada commit é uma sobrevivência a mais."',
+];
+let quoteIdx = Math.floor(Math.random()*QUOTES.length);
+function rotateQuote() {
+  quoteIdx = (quoteIdx+1)%QUOTES.length;
+  const el = document.getElementById('kanekiQuote');
+  el.style.opacity = 0;
+  setTimeout(()=>{ el.textContent = QUOTES[quoteIdx]; el.style.opacity = 1; el.style.transition='opacity 0.5s'; }, 300);
+}
+setInterval(rotateQuote, 6000);
+document.getElementById('kanekiQuote').textContent = QUOTES[quoteIdx];
+
+// ============ LEFT ZONE — CIRCUIT GRID ANIMATION ============
+(function initLeftGrid(){
+  const cv = document.getElementById('leftCanvas');
+  if(!cv) return;
+  const ctx = cv.getContext('2d');
+  function resize(){ cv.width=220; cv.height=window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Hex grid nodes
+  const nodes = [];
+  const COLS = 7, ROWS = 22;
+  const HX = 30, HY = 38;
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const ox = (r%2===0)?0:HX*0.5;
+      nodes.push({
+        x: 8 + c*HX + ox,
+        y: 10 + r*HY,
+        pulse: Math.random()*Math.PI*2,
+        speed: 0.008 + Math.random()*0.012,
+        bright: Math.random(),
+        type: Math.random()>0.85?'active':'dim',
+      });
+    }
+  }
+
+  // Animated data lines (vertical streaks)
+  const lines = Array.from({length:6},(_,i)=>({
+    x: 18 + i*33,
+    y: Math.random()*window.innerHeight,
+    speed: 0.4 + Math.random()*0.8,
+    len: 30 + Math.random()*60,
+    alpha: 0.06 + Math.random()*0.1,
+  }));
+
+  function draw(){
+    const H = cv.height;
+    ctx.clearRect(0,0,220,H);
+
+    // very faint gradient overlay
+    const g = ctx.createLinearGradient(0,0,220,0);
+    g.addColorStop(0,'rgba(5,3,8,0.0)');
+    g.addColorStop(1,'rgba(5,3,8,0.4)');
+    ctx.fillStyle=g; ctx.fillRect(0,0,220,H);
+
+    // draw hex edges between neighbors
+    ctx.lineWidth=0.6;
+    for(let i=0;i<nodes.length;i++){
+      const a=nodes[i];
+      for(let j=i+1;j<nodes.length;j++){
+        const b=nodes[j];
+        const dx=b.x-a.x, dy=b.y-a.y;
+        const d=Math.sqrt(dx*dx+dy*dy);
+        if(d<HX*1.55){
+          const alpha=(0.04+0.04*Math.sin(a.pulse))*((a.type==='active'||b.type==='active')?2.2:1);
+          ctx.strokeStyle=`rgba(192,57,43,${alpha})`;
+          ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+        }
+      }
+    }
+
+    // draw nodes
+    nodes.forEach(n=>{
+      n.pulse+=n.speed;
+      const glow=0.5+0.5*Math.sin(n.pulse);
+      const isActive=n.type==='active';
+      const r=isActive?2.5:1.5;
+      const alpha=isActive?(0.15+0.35*glow):(0.04+0.08*glow);
+      ctx.beginPath();
+      ctx.arc(n.x,n.y,r,0,Math.PI*2);
+      ctx.fillStyle=isActive?`rgba(220,70,50,${alpha})`:`rgba(140,30,20,${alpha})`;
+      ctx.fill();
+      if(isActive){
+        ctx.beginPath(); ctx.arc(n.x,n.y,r*2.5,0,Math.PI*2);
+        ctx.fillStyle=`rgba(192,57,43,${0.04*glow})`;
+        ctx.fill();
+      }
+    });
+
+    // data line streaks
+    lines.forEach(l=>{
+      l.y += l.speed;
+      if(l.y > H+l.len) l.y = -l.len;
+      const lg=ctx.createLinearGradient(0,l.y-l.len,0,l.y);
+      lg.addColorStop(0,'rgba(192,57,43,0)');
+      lg.addColorStop(0.7,`rgba(220,80,50,${l.alpha})`);
+      lg.addColorStop(1,'rgba(255,100,60,0)');
+      ctx.strokeStyle=lg; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(l.x,l.y-l.len); ctx.lineTo(l.x,l.y); ctx.stroke();
+    });
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+(function initKagune() {
+  const canvas = document.getElementById('kaguneCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Kaneki's rinkaku kagune: 4 thick ribbon-like tentacles from bottom-center/right
+  // Each is a wide, sinuous ribbon with bumpy texture and scale-like markings on surface
+  const TENDRILS = [
+    // main two big ones that arc wide — like the reference image
+    { ox:0.78, oy:1.02, baseAng:-1.25, len:0.72, segs:32, maxW:52, waveAmp:130, waveFreq:1.8, speed:0.006, phase:0,   alpha:0.18 },
+    { ox:0.85, oy:1.05, baseAng:-1.55, len:0.65, segs:28, maxW:44, waveAmp:110, waveFreq:1.9, speed:0.007, phase:1.6, alpha:0.15 },
+    // two thinner supporting ones
+    { ox:0.72, oy:1.0,  baseAng:-0.95, len:0.58, segs:24, maxW:32, waveAmp:90,  waveFreq:2.1, speed:0.008, phase:3.1, alpha:0.12 },
+    { ox:0.90, oy:0.98, baseAng:-1.85, len:0.52, segs:22, maxW:26, waveAmp:75,  waveFreq:2.3, speed:0.009, phase:4.7, alpha:0.10 },
+  ];
+
+  function buildRibbon(t, W, H, time) {
+    const sx = t.ox * W, sy = t.oy * H;
+    const pts = [];
+    const len = Math.max(W, H) * t.len;
+    for (let i = 0; i <= t.segs; i++) {
+      const prog = i / t.segs;
+      const dist = len * prog;
+      // main curve — large S-wave like Kaneki's kagune
+      const wave1 = Math.sin(prog * Math.PI * t.waveFreq + t.phase) * t.waveAmp * (1 - prog * 0.3);
+      const wave2 = Math.sin(prog * Math.PI * t.waveFreq * 2 + t.phase * 1.3) * t.waveAmp * 0.18 * prog;
+      const ang = t.baseAng;
+      const perp = ang + Math.PI / 2;
+      const x = sx + Math.cos(ang) * dist + Math.cos(perp) * (wave1 + wave2);
+      const y = sy + Math.sin(ang) * dist + Math.sin(perp) * (wave1 + wave2);
+      // width tapers from thick base to pointed tip
+      const widthTaper = Math.pow(1 - prog, 0.45) * (0.7 + 0.3 * Math.sin(prog * Math.PI));
+      const w = t.maxW * widthTaper;
+      pts.push({ x, y, w, prog });
+    }
+    return pts;
+  }
+
+  function drawRibbon(pts, alpha) {
+    if (pts.length < 3) return;
+    const n = pts.length;
+
+    // ---- outer body (filled polygon ribbon) ----
+    // compute left and right edge points
+    const left = [], right = [];
+    for (let i = 0; i < n; i++) {
+      const p = pts[i];
+      const dx = i < n-1 ? pts[i+1].x - pts[i].x : pts[i].x - pts[i-1].x;
+      const dy = i < n-1 ? pts[i+1].y - pts[i].y : pts[i].y - pts[i-1].y;
+      const len = Math.sqrt(dx*dx+dy*dy) || 1;
+      const nx = -dy/len, ny = dx/len;
+      left.push({  x: p.x + nx * p.w * 0.5, y: p.y + ny * p.w * 0.5 });
+      right.push({ x: p.x - nx * p.w * 0.5, y: p.y - ny * p.w * 0.5 });
+    }
+
+    // fill body
+    ctx.beginPath();
+    ctx.moveTo(left[0].x, left[0].y);
+    for (let i = 1; i < n; i++) ctx.lineTo(left[i].x, left[i].y);
+    for (let i = n-1; i >= 0; i--) ctx.lineTo(right[i].x, right[i].y);
+    ctx.closePath();
+    const g = ctx.createLinearGradient(pts[0].x, pts[0].y, pts[n-1].x, pts[n-1].y);
+    g.addColorStop(0,   `rgba(120,10,10,${alpha*1.1})`);
+    g.addColorStop(0.3, `rgba(180,30,20,${alpha})`);
+    g.addColorStop(0.7, `rgba(160,20,15,${alpha*0.85})`);
+    g.addColorStop(1,   `rgba(80,5,5,${alpha*0.3})`);
+    ctx.fillStyle = g;
+    ctx.fill();
+
+    // bright highlight stripe down center
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < n; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.strokeStyle = `rgba(240,80,50,${alpha * 0.45})`;
+    ctx.lineWidth = pts[0].w * 0.18;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    // edge outlines
+    ['left','right'].forEach(side => {
+      const arr = side === 'left' ? left : right;
+      ctx.beginPath();
+      ctx.moveTo(arr[0].x, arr[0].y);
+      for (let i = 1; i < n; i++) ctx.lineTo(arr[i].x, arr[i].y);
+      ctx.strokeStyle = `rgba(210,40,30,${alpha * 0.6})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+
+    // scale / bump markings along body (like the reference image texture)
+    for (let i = 2; i < n - 2; i += 3) {
+      const p = pts[i];
+      if (p.w < 5) continue;
+      const dx = i < n-1 ? pts[i+1].x - pts[i].x : pts[i].x - pts[i-1].x;
+      const dy = i < n-1 ? pts[i+1].y - pts[i].y : pts[i].y - pts[i-1].y;
+      const ll = Math.sqrt(dx*dx+dy*dy)||1;
+      const nx = -dy/ll, ny = dx/ll;
+      const scaleW = p.w * 0.38;
+      const scaleH = p.w * 0.22;
+
+      // left bump
+      ctx.beginPath();
+      ctx.ellipse(p.x + nx*p.w*0.3, p.y + ny*p.w*0.3, scaleW, scaleH, Math.atan2(dy,dx), 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,60,40,${alpha*0.22})`;
+      ctx.fill();
+      ctx.strokeStyle = `rgba(220,50,30,${alpha*0.5})`;
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+
+      // right bump
+      ctx.beginPath();
+      ctx.ellipse(p.x - nx*p.w*0.3, p.y - ny*p.w*0.3, scaleW, scaleH, Math.atan2(dy,dx), 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,60,40,${alpha*0.22})`;
+      ctx.fill();
+      ctx.strokeStyle = `rgba(220,50,30,${alpha*0.5})`;
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    }
+
+    // sharp tip at end
+    const tip = pts[n-1];
+    const prev = pts[n-2];
+    const tang = Math.atan2(tip.y-prev.y, tip.x-prev.x);
+    ctx.beginPath();
+    ctx.moveTo(tip.x, tip.y);
+    ctx.lineTo(tip.x - Math.cos(tang-0.4)*tip.w*1.5, tip.y - Math.sin(tang-0.4)*tip.w*1.5);
+    ctx.lineTo(tip.x - Math.cos(tang+0.4)*tip.w*1.5, tip.y - Math.sin(tang+0.4)*tip.w*1.5);
+    ctx.closePath();
+    ctx.fillStyle = `rgba(200,40,30,${alpha*0.7})`;
+    ctx.fill();
+  }
+
+  let t = 0;
+  function animate() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    t += 0.01;
+    TENDRILS.forEach(td => {
+      td.phase += td.speed;
+      const pts = buildRibbon(td, W, H, t);
+      drawRibbon(pts, td.alpha);
+    });
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+
+// ============ FALLING RED PETALS ============
+(function initPetals() {
+  const cont = document.getElementById('petals');
+  for (let i = 0; i < 28; i++) {
+    const p = document.createElement('div');
+    p.className = 'petal';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.setProperty('--pd',  (5 + Math.random() * 9) + 's');
+    p.style.setProperty('--pdl', (Math.random() * 12) + 's');
+    p.style.setProperty('--pr',  (Math.random() * 360) + 'deg');
+    p.style.setProperty('--psx', (Math.random() * 100 - 50) + 'px');
+    // random size variation
+    const s = 0.6 + Math.random() * 0.9;
+    p.style.transform = `scale(${s})`;
+    cont.appendChild(p);
+  }
+})();
+
+// ============ RC PARTICLES ============
+(function spawnParticles() {
+  const cont = document.getElementById('particles');
+  for (let i = 0; i < 22; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.top  = Math.random() * 100 + 'vh';
+    p.style.setProperty('--dur',   (6  + Math.random() * 10) + 's');
+    p.style.setProperty('--delay', (Math.random() * 8) + 's');
+    p.style.setProperty('--tx1', (Math.random() * 100 - 50) + 'px');
+    p.style.setProperty('--ty1', (Math.random() * 100 - 50) + 'px');
+    p.style.setProperty('--tx2', (Math.random() * 200 - 100) + 'px');
+    p.style.setProperty('--ty2', (Math.random() * 200 - 100) + 'px');
+    p.style.setProperty('--tx3', (Math.random() * 300 - 150) + 'px');
+    p.style.setProperty('--ty3', (Math.random() * 300 - 150) + 'px');
+    cont.appendChild(p);
+  }
+})();
+
+// ============ DATA ============
+const PHASES = [
+  // ─────────────────────────────────────────────
+  // FASE 1 — HTML
+  // ─────────────────────────────────────────────
+  {id:'p1',icon:'🌐',name:'FASE 1 — HTML',
+   desc:'A estrutura de toda página web — aprenda a linguagem do navegador',
+   arc:'🩸 Arc: Antes do Ghoul — o humano que Ken Kaneki era antes de tudo mudar.',
+   xp:220,color:'#e74c3c',internship:false,checkpoint:'Checkpoint: você consegue criar páginas HTML completas!',
+   tasks:[
+    {id:'t1',title:'Seção 1 — Front-End Web Development',
+     desc:'O que é front-end, como a web funciona, ferramentas do curso (37min)',xp:20,links:[]},
+    {id:'t2',title:'Seção 2 — Introduction to HTML',
+     desc:'Tags essenciais, estrutura de página, headings, parágrafos, listas (49min)',xp:60,links:[]},
+    {id:'t3',title:'Seção 3 — Intermediate HTML',
+     desc:'Tabelas, formulários, inputs, elementos semânticos (52min)',xp:70,links:[]},
+    {id:'t4',title:'Seção 4 — Multi-Page Websites',
+     desc:'Links entre páginas, caminhos de arquivo, âncoras, estrutura de projetos (1h10)',xp:70,links:[]},
+  ]},
+
+  // ─────────────────────────────────────────────
+  // FASE 2 — CSS
+  // ─────────────────────────────────────────────
+  {id:'p2',icon:'🎨',name:'FASE 2 — CSS',
+   desc:'Estilo, layout e responsividade — deixe seus sites bonitos de verdade',
+   arc:'🩸 Arc: Ghoul de Tóquio — HTML é o esqueleto, CSS é a pele.',
+   xp:430,color:'#3498db',internship:false,checkpoint:'Checkpoint: você cria sites bonitos e responsivos!',
+   tasks:[
+    {id:'t5',title:'Seção 5 — Introduction to CSS',
+     desc:'Seletores, cores, fontes, box model, propriedades básicas (59min)',xp:70,links:[]},
+    {id:'t6',title:'Seção 6 — CSS Properties',
+     desc:'Backgrounds, borders, display, position, overflow (1h9)',xp:70,links:[]},
+    {id:'t7',title:'Seção 7 — Intermediate CSS',
+     desc:'Combinadores, pseudo-classes, pseudo-elementos, especificidade (1h33)',xp:80,links:[]},
+    {id:'t8',title:'Seção 8 — Advanced CSS',
+     desc:'Transitions, transforms, animations, variáveis CSS (1h4)',xp:80,links:[]},
+    {id:'t9',title:'Seção 9 — Flexbox',
+     desc:'Flex container, flex items, alinhamento, layouts responsivos (1h25)',xp:70,links:[]},
+    {id:'t10',title:'Seção 10 — Grid',
+     desc:'CSS Grid, áreas, fr units, layouts complexos (1h11)',xp:70,links:[]},
+    {id:'t11',title:'Seção 11 — Bootstrap',
+     desc:'Grid Bootstrap, componentes, navbar, cards, responsividade (1h40)',xp:60,links:[]},
+    {id:'t12',title:'⭐ PROJETO — Capstone 1: Site pessoal publicado',
+     desc:'Aplique HTML + CSS num projeto real e publique no GitHub Pages',xp:80,ext:true,links:[]},
+  ]},
+
+  // ─────────────────────────────────────────────
+  // FASE 3 — JavaScript
+  // ─────────────────────────────────────────────
+  {id:'p3',icon:'⚡',name:'FASE 3 — JavaScript',
+   desc:'A linguagem que dá vida à web — do básico ao DOM real',
+   arc:'🩸 Arc: Aogiri Tree — o poder desperta, mas ainda é bruto e instável.',
+   xp:500,color:'#f1c40f',internship:false,checkpoint:'Checkpoint: você manipula o DOM e cria interações reais!',
+   tasks:[
+    {id:'t13',title:'Seção 14 — Introduction to Javascript ES6',
+     desc:'Variáveis, tipos, operadores, condicionais, loops, funções (2h28)',xp:120,links:[]},
+    {id:'t14',title:'Seção 15 — Intermediate Javascript',
+     desc:'Arrays, objetos, HOFs, map/filter/reduce, ES6+ (1h30)',xp:100,links:[]},
+    {id:'t15',title:'Seção 16 — The Document Object Model (DOM)',
+     desc:'Seleção de elementos, eventos, manipulação real do HTML (58min)',xp:90,links:[]},
+    {id:'t16',title:'Seção 17 — Boss Level Challenge 1: The Dice Game',
+     desc:'Projeto prático combinando HTML + CSS + JS (11min)',xp:60,links:[]},
+    {id:'t17',title:'Seção 18 — Advanced Javascript and DOM Manipulation',
+     desc:'Event listeners, callbacks, animações, projetos complexos (1h35)',xp:100,links:[]},
+    {id:'t18',title:'Seção 19 — jQuery',
+     desc:'Manipulação de DOM simplificada, eventos, animações (53min)',xp:60,links:[]},
+    {id:'t19',title:'Seção 20 — Boss Level Challenge 2: The Simon Game',
+     desc:'Projeto completo Simon Game — testa tudo que aprendeu (15min)',xp:70,links:[]},
+  ]},
+
+  // ─────────────────────────────────────────────
+  // FASE 4 — Backend & Node.js
+  // ─────────────────────────────────────────────
+  {id:'p4',icon:'🛠️',name:'FASE 4 — Backend & Node.js',
+   desc:'Servidor, rotas, APIs e lógica do lado do servidor',
+   arc:'🩸 Arc: Investigadores CCG — você aprende as regras do outro lado.',
+   xp:430,color:'#2ecc71',internship:false,checkpoint:'Checkpoint: você cria servidores e APIs funcionando!',
+   tasks:[
+    {id:'t20',title:'Seção 21 — The Unix Command Line',
+     desc:'Terminal, navegação, comandos essenciais para devs (30min)',xp:40,links:[]},
+    {id:'t21',title:'Seção 22 — Backend Web Development',
+     desc:'Como funciona o backend, HTTP, request/response, servidores (21min)',xp:50,links:[]},
+    {id:'t22',title:'Seção 23 — Node.js',
+     desc:'Módulos, npm, file system, criando scripts no servidor (1h6)',xp:90,links:[]},
+    {id:'t23',title:'Seção 24 — Express.js with Node.js',
+     desc:'Rotas, middlewares, body parser, servidor HTTP completo (2h1)',xp:100,links:[]},
+    {id:'t24',title:'Seção 25 — EJS (Templating)',
+     desc:'Templates dinâmicos, renderizar HTML com dados do servidor (1h30)',xp:80,links:[]},
+    {id:'t25',title:'⭐ Seção 26 — Capstone Project: Blog Web Application',
+     desc:'Projeto completo de blog com Node + Express + EJS',xp:90,ext:true,links:[]},
+    {id:'t26',title:'Seção 27 — Git, Github and Version Control',
+     desc:'Controle de versão, branches, merge, GitHub — obrigatório pra qualquer dev (1h17)',xp:80,links:[]},
+  ]},
+
+  // ─────────────────────────────────────────────
+  // FASE 5 — APIs & Banco de Dados
+  // ─────────────────────────────────────────────
+  {id:'p5',icon:'🔌',name:'FASE 5 — APIs & Banco de Dados',
+   desc:'Consuma APIs externas, crie as suas e persista dados com SQL',
+   arc:'🩸 Arc: Anteiku — você entende como o mundo funciona por dentro.',
+   xp:430,color:'#9b59b6',internship:false,checkpoint:'Checkpoint: você consome e cria APIs com banco de dados!',
+   tasks:[
+    {id:'t27',title:'Seção 28 — Application Programming Interfaces (APIs)',
+     desc:'O que são APIs, REST, JSON, requisições HTTP, autenticação (2h28)',xp:90,links:[]},
+    {id:'t28',title:'⭐ Seção 29 — Capstone: Use a Public API',
+     desc:'Projeto consumindo API real — clima, filmes, etc.',xp:70,ext:true,links:[]},
+    {id:'t29',title:'Seção 30 — Build Your Own API',
+     desc:'Criando sua própria API REST com Express (1h17)',xp:90,links:[]},
+    {id:'t30',title:'Seção 31 — Databases',
+     desc:'Fundamentos de banco de dados, SQL vs NoSQL (22min)',xp:40,links:[]},
+    {id:'t31',title:'Seção 32 — SQL',
+     desc:'SELECT, INSERT, UPDATE, DELETE, WHERE, JOINs básicos (36min)',xp:70,links:[]},
+    {id:'t32',title:'Seção 33 — PostgreSQL',
+     desc:'Banco relacional robusto, queries avançadas, integração com Node (4h11)',xp:120,links:[]},
+    {id:'t33',title:'⭐ Seção 34 — Capstone Project: Book Notes',
+     desc:'Projeto full stack com banco de dados real',xp:80,ext:true,links:[]},
+  ]},
+
+  // ─────────────────────────────────────────────
+  // FASE 6 — Autenticação & Segurança
+  // ─────────────────────────────────────────────
+  {id:'p6',icon:'🔐',name:'FASE 6 — Autenticação & Segurança',
+   desc:'Login, senhas, sessions, OAuth — como apps reais protegem dados',
+   arc:'🩸 Arc: Caso Owl — você aprende que identidade e segredos são poder.',
+   xp:180,color:'#e67e22',internship:false,checkpoint:'Checkpoint: você implementa login e autenticação real!',
+   tasks:[
+    {id:'t34',title:'Seção 35 — Authentication and Security',
+     desc:'Bcrypt, sessions, cookies, Passport.js, OAuth Google (2h56)',xp:180,links:[]},
+  ]},
+
+  // ─────────────────────────────────────────────
+  // FASE 7 — REACT ⭐ ESTÁGIO
+  // ─────────────────────────────────────────────
+  {id:'p7',icon:'⚛️',name:'FASE 7 — REACT ⭐ ESTÁGIO',
+   desc:'O framework mais pedido no mercado — aqui você se candidata ao estágio!',
+   arc:'🩸 Arc: Black Reaper — Kaneki aceita quem ele é. Você se torna dev de verdade.',
+   xp:520,color:'#c9a84c',internship:true,
+   tasks:[
+    {id:'t35',title:'Seção 36 — React.js',
+     desc:'Componentes, props, state, hooks, eventos, listas, formulários (8h30)',xp:250,links:[]},
+    {id:'t36',title:'⭐ PROJETO — To-Do App ou Clone em React',
+     desc:'Crie um projeto React do zero e suba no GitHub — diferencial no currículo',xp:100,ext:true,links:[]},
+    {id:'t37',title:'⭐ TypeScript Básico — diferencial enorme',
+     desc:'Tipagem estática em JS — muito pedido em vagas de estágio/júnior',xp:90,ext:true,links:[]},
+    {id:'t38',title:'⭐ Tailwind CSS — muito pedido no mercado',
+     desc:'Utilitários CSS modernos — substitui Bootstrap em muitos projetos',xp:80,ext:true,links:[]},
+  ]},
+
+  // ─────────────────────────────────────────────
+  // FASE 8 — Web3 & Blockchain (OPCIONAL)
+  // ─────────────────────────────────────────────
+  {id:'p8',icon:'🔗',name:'FASE 8 — Web3 & Blockchain (OPCIONAL)',
+   desc:'Conteúdo nichado — faça só se tiver interesse em cripto/Web3',
+   arc:'🩸 Arc: Dragon — transformação radical, território desconhecido.',
+   xp:200,color:'#7f8c8d',internship:false,checkpoint:null,
+   tasks:[
+    {id:'t39',title:'Seção 37 — Web3 Decentralised App (DApp)',
+     desc:'Internet Computer, contratos inteligentes, conceitos básicos de Web3 (1h12)',xp:50,links:[]},
+    {id:'t40',title:'Seção 38 — Build Your First DeFi DApp — DBANK',
+     desc:'Projeto DeFi simulando banco descentralizado (1h45)',xp:50,links:[]},
+    {id:'t41',title:'Seção 39 — Deploying to the ICP Live Blockchain',
+     desc:'Deploy real na blockchain ICP (26min)',xp:30,links:[]},
+    {id:'t42',title:'Seção 40 — Building DApps on ICP with a React Frontend',
+     desc:'React + blockchain integrados (56min)',xp:40,links:[]},
+    {id:'t43',title:'Seção 41 — Create Your Own Crypto Token',
+     desc:'Criando token personalizado na blockchain (2h19)',xp:30,links:[]},
+  ]},
+
+  // ─────────────────────────────────────────────
+  // FASE 9 — Conclusão & Próximos Passos
+  // ─────────────────────────────────────────────
+  {id:'p9',icon:'🏁',name:'FASE 9 — Conclusão & Próximos Passos',
+   desc:'Finalize o curso e planeje sua evolução como dev',
+   arc:'🩸 Arc: One-Eyed King — a jornada não termina, ela evolui.',
+   xp:100,color:'#27ae60',internship:false,checkpoint:null,
+   tasks:[
+    {id:'t44',title:'Seção 42 — NFT Marketplace (OPCIONAL)',
+     desc:'Projeto avançado Web3 — só se tiver interesse em NFTs (3h34)',xp:30,links:[]},
+    {id:'t45',title:'Seção 43 — Ask Angela Anything',
+     desc:'Módulo Q&A com dicas de carreira e estudos (2h44)',xp:30,links:[]},
+    {id:'t46',title:'Seção 44 — Next Steps',
+     desc:'O que estudar depois, roadmap de carreira, como continuar evoluindo (1min)',xp:20,links:[]},
+    {id:'t47',title:'Seção 45 — Bonus: Succeed in the Age of AI',
+     desc:'Como usar IA a seu favor como desenvolvedor (10min)',xp:20,links:[]},
+    {id:'t48',title:'🏆 CONCLUÍDO — Angela Yu Complete Web Dev',
+     desc:'Parabéns! Você completou um dos melhores cursos de web do mundo 🎉',xp:30,links:[]},
+  ]},
+];
+
+const LEVELS=[
+  {level:1,min:0,max:80,title:'Iniciante',ghoul:'✦ Humano'},
+  {level:2,min:80,max:200,title:'Env OK',ghoul:'✦ Rank C'},
+  {level:3,min:200,max:370,title:'Lógica',ghoul:'✦ Rank C — Rinkaku'},
+  {level:4,min:370,max:600,title:'HTML Dev',ghoul:'✦✦ Rank C+ — Touka'},
+  {level:5,min:600,max:900,title:'CSS Dev',ghoul:'✦✦ Rank C+ — Touka Full'},
+  {level:6,min:900,max:1250,title:'JS Novice',ghoul:'✦✦ Rank B — Cabelo Branco'},
+  {level:7,min:1250,max:1650,title:'JS Dev',ghoul:'✦✦✦ Rank B+ — Kakuja'},
+  {level:8,min:1650,max:2100,title:'Node Dev',ghoul:'✦✦✦ Rank A — Takizawa'},
+  {level:9,min:2100,max:2600,title:'Frontend Dev',ghoul:'✦✦✦ Rank A — Takizawa Kakuja'},
+  {level:10,min:2600,max:3150,title:'Bootstrap Dev',ghoul:'✦✦✦✦ Rank A+ — Eto Owl'},
+  {level:11,min:3150,max:3750,title:'React Dev',ghoul:'✦✦✦✦ Rank S — Eto Full Owl'},
+  {level:12,min:3750,max:4400,title:'React+TS Dev',ghoul:'✦✦✦✦ Rank S — Haise Sasaki'},
+  {level:13,min:4400,max:5100,title:'Backend Dev',ghoul:'✦✦✦✦✦ Rank S+ — Black Reaper'},
+  {level:14,min:5100,max:5500,title:'Full Stack Dev',ghoul:'✦✦✦✦✦ Rank SS — Furuta'},
+  {level:15,min:5500,max:6031,title:'Senior Dev',ghoul:'☩ Rank SSS — Dragon'},
+  {level:16,min:6031,max:7000,title:'Tech Lead',ghoul:'☩☩ Rank SSS+ — Dragon Rei'},
+  {level:17,min:7000,max:8200,title:'Architect',ghoul:'☩☩ Rank ??? — Dragon Final'},
+  {level:18,min:8200,max:9800,title:'Principal Eng',ghoul:'☩☩☩ Unranked — Void'},
+  {level:19,min:9800,max:12000,title:'Distinguished',ghoul:'☩☩☩ One-Eyed King'},
+  {level:20,min:12000,max:18000,title:'☩ LENDA ☩',ghoul:'☩☩☩☩ FORMA FINAL'},
+  {level:21,min:18000,max:99999,title:'☩☩ KAKUJA COROA',ghoul:'☩☩☩☩☩ KAKUJA COROA'},
+];
+
+const BADGES = [
+  {id:'b1', secret:false, icon:'🩸', name:'Primeira Gota', desc:'Complete sua primeira tarefa', cond:s=>s.done>=1},
+  {id:'b2', secret:false, icon:'📄', name:'HTML Vivo', desc:'Complete toda a fase de HTML e CSS', cond:s=>PHASES.find(p=>p.id==='p2').tasks.every(t=>s.devState[t.id])},
+  {id:'b3', secret:false, icon:'⚡', name:'JS Desperto', desc:'Complete toda a fase de JavaScript', cond:s=>PHASES.find(p=>p.id==='p3').tasks.every(t=>s.devState[t.id])},
+  {id:'b4', secret:false, icon:'🛠️', name:'Ferreiro do Código', desc:'Complete a fase de Ferramentas', cond:s=>PHASES.find(p=>p.id==='p4').tasks.every(t=>s.devState[t.id])},
+  {id:'b5', secret:false, icon:'🎨', name:'Estilista Ghoul', desc:'Complete Bootstrap, jQuery e Tailwind', cond:s=>PHASES.find(p=>p.id==='p5').tasks.every(t=>s.devState[t.id])},
+  {id:'b6', secret:false, icon:'⚛️', name:'Reactor Core', desc:'Complete toda a fase React', cond:s=>PHASES.find(p=>p.id==='p6').tasks.every(t=>s.devState[t.id])},
+  {id:'b7', secret:false, icon:'🖥️', name:'Servidor das Trevas', desc:'Complete o Backend completo', cond:s=>PHASES.find(p=>p.id==='p7').tasks.every(t=>s.devState[t.id])},
+  {id:'b8', secret:false, icon:'🌐', name:'Full Stack Ghoul', desc:'Trilha 100% concluída — Vue.js e Deploy', cond:s=>PHASES.find(p=>p.id==='p8').tasks.every(t=>s.devState[t.id])},
+  {id:'b9',  secret:false, icon:'👁️', name:'Olho de Ghoul', desc:'LV3 — o primeiro olho desperta', cond:s=>s.level>=3},
+  {id:'b10', secret:false, icon:'🩻', name:'Kagune Nascendo', desc:'LV5 — o kagune começa a emergir', cond:s=>s.level>=5},
+  {id:'b11', secret:false, icon:'🤍', name:'Cabelo Branco', desc:'LV6 — como Kaneki após o trauma de Jason', cond:s=>s.level>=6},
+  {id:'b12', secret:false, icon:'🕷️', name:'Centopeia', desc:'LV7 — Kakuja desperto, mente fragmentando', cond:s=>s.level>=7},
+  {id:'b13', secret:false, icon:'⚔️', name:'Lâmina de Takizawa', desc:'LV8 — armadura forjada em dor', cond:s=>s.level>=8},
+  {id:'b14', secret:false, icon:'🦉', name:'One-Eyed Owl', desc:'LV11 — Eto em forma completa', cond:s=>s.level>=11},
+  {id:'b15', secret:false, icon:'🥼', name:'Haise Sasaki', desc:'LV12 — o investigador que esqueceu quem era', cond:s=>s.level>=12},
+  {id:'b16', secret:false, icon:'⚫', name:'Black Reaper', desc:'LV13 — o Kaneki que não sente mais dor', cond:s=>s.level>=13},
+  {id:'b17', secret:false, icon:'🐉', name:'Dragon Kakuja', desc:'LV15 — a transformação que engoliu Tóquio', cond:s=>s.level>=15},
+  {id:'b18', secret:false, icon:'☩',  name:'One-Eyed King', desc:'LV19 — Hide estava certo desde o início', cond:s=>s.level>=19},
+  {id:'b19', secret:false, icon:'👑', name:'Kakuja Coroa', desc:'LV21 — a forma final, além de qualquer rank', cond:s=>s.level>=21},
+  {id:'b20', secret:false, icon:'☕', name:'Regular do Anteiku', desc:'3 dias de streak — o café nunca fecha', cond:s=>s.streak>=3},
+  {id:'b21', secret:false, icon:'💀', name:'Sobreviveu a Jason', desc:'7 dias de streak — resistiu à masmorra', cond:s=>s.streak>=7},
+  {id:'b22', secret:false, icon:'🌸', name:'Raiz A', desc:'14 dias de streak — dedicação de investigador especial', cond:s=>s.streak>=14},
+  {id:'b23', secret:false, icon:'🏯', name:'24ª Ward', desc:'30 dias de streak — você virou lenda', cond:s=>s.streak>=30},
+  {id:'s1', secret:true, icon:'🫀', name:'RC Cells Ativas', desc:'Complete 5 tarefas', cond:s=>s.done>=5},
+  {id:'s2', secret:true, icon:'🎭', name:'Máscara de Gourmet', desc:'Complete 10 tarefas em um dia', cond:s=>s.todayDone>=10},
+  {id:'s3', secret:true, icon:'📿', name:'Colar de Kaneki', desc:'Alcance 1000 XP', cond:s=>s.xp>=1000},
+  {id:'s4', secret:true, icon:'🩸', name:'Sangue de Rize', desc:'Alcance 2500 XP — ela ainda vive em você', cond:s=>s.xp>=2500},
+  {id:'s5', secret:true, icon:'🌑', name:'Void', desc:'Alcance 5000 XP — o vazio te consome', cond:s=>s.xp>=5000},
+  {id:'s6', secret:true, icon:'🌌', name:'Além do Rank', desc:'Alcance 10000 XP — sem classificação possível', cond:s=>s.xp>=10000},
+  {id:'s7', secret:true, icon:'🦴', name:'1000 Ossos', desc:'Acumule entre 1337 e 1400 XP (easter egg)', cond:s=>s.xp>=1337&&s.xp<=1400},
+  {id:'s8', secret:true, icon:'🇺🇸', name:'Fluência CCG', desc:'Complete 20 atividades de inglês', cond:s=>s.engDone>=20},
+  {id:'s9', secret:true, icon:'🌙', name:'Noturno de Tóquio', desc:'Complete tarefas de dev e inglês no mesmo dia', cond:s=>s.todayDone>=3&&s.todayEngDone>=2},
+  {id:'s10', secret:true, icon:'🥢', name:'Anteiku Regular', desc:'Complete as fases 1 e 2 por completo', cond:s=>['p1','p2'].every(id=>PHASES.find(p=>p.id===id).tasks.every(t=>s.devState[t.id]))},
+  {id:'s11', secret:true, icon:'⚗️', name:'Experimento de Kanou', desc:'Mais de 500 XP ainda no nível 4', cond:s=>s.xp>=500&&s.level<=4},
+  {id:'s12', secret:true, icon:'📖', name:'Diário de Kaneki', desc:'Use o app em 7 dias diferentes', cond:s=>s.daysUsed>=7},
+  {id:'s13', secret:true, icon:'🧵', name:'Fio de Arima', desc:'Complete 30 tarefas no total', cond:s=>s.done>=30},
+  {id:'s14', secret:true, icon:'🗡️', name:'Naghini', desc:'Complete todas as tarefas de qualquer fase', cond:s=>PHASES.some(p=>p.tasks.every(t=>s.devState[t.id]))},
+  {id:'s15', secret:true, icon:'🌀', name:'Ken Kaneki', desc:'Desbloqueie todas as conquistas normais', cond:s=>['b1','b2','b3','b4','b5','b6','b7','b8','b9','b10','b11','b12','b13','b14','b15','b16','b17','b18','b19','b20','b21','b22','b23'].every(id=>s.unlocked.includes(id))},
+
+  // ── 1000-7 ────────────────────────────────────────────────
+  {id:'s16', secret:true, icon:'🔢', name:'1000-7',
+    desc:'Acumule exatamente 993 XP — Jason nunca para',
+    cond:s=>s.xp>=993&&s.xp<=999},
+  {id:'s17', secret:true, icon:'🩸', name:'986',
+    desc:'Continue... 993, 986, 979... você não vai parar',
+    cond:s=>s.xp>=986&&s.xp<=992},
+  {id:'s18', secret:true, icon:'😶', name:'Ele Não Para',
+    desc:'Complete 7 tarefas seguidas sem parar — como Kaneki contando',
+    cond:s=>s.todayDone>=7},
+
+  // ── TRAGÉDIA ──────────────────────────────────────────────
+  // "Se a minha vida fosse um livro, seria uma tragédia."
+  // Kaneki fala isso no início e no final do manga — o ciclo se fecha
+  {id:'s19', secret:true, icon:'📕', name:'Uma Tragédia',
+    desc:'Chegue ao nível 20 e caia de volta para o nível 1 — o ciclo do Kaneki',
+    cond:s=>s.tragedyReached===true},
+  {id:'s20', secret:true, icon:'🎭', name:'Se Fosse um Livro',
+    desc:'Fique exatamente 20 dias no app sem completar nenhuma tarefa em pelo menos 1 dia — a pausa do Kaneki antes da luta final',
+    cond:s=>s.daysUsed>=20&&s.done>=1},
+  {id:'s21', secret:true, icon:'🌧️', name:'Capítulo 1 = Capítulo Final',
+    desc:'Complete sua primeira e última tarefa da trilha — o círculo se fecha como na história',
+    cond:s=>s.devState['t1']&&s.devState['t41']},
+  {id:'s22', secret:true, icon:'🩶', name:'Feliz Nunca Foi uma Opção',
+    desc:'Alcance o nível 10 sem nenhum dia de streak acima de 2 — sobrevivendo aos trancos',
+    cond:s=>s.level>=10&&s.streak<=2},
+  {id:'s23', secret:true, icon:'📖', name:'Trágico Desde o Início',
+    desc:'Abra o app, complete uma tarefa e não volte por 7 dias — como Kaneki, você some no momento errado',
+    cond:s=>s.done>=1&&s.streak===0&&s.daysUsed>=2},
+];
+
+const TREINO = {
+  "Segunda": {
+    f1:{ nome:"💪 Peito + Tríceps — Push A (Fase 1)",
+      exercicios:[
+        {n:"Supino reto barra",      s:"3×8",  obs:"60–70% carga · descida 3s · peito toca a barra"},
+        {n:"Supino inclinado halter",s:"3×10", obs:"30–45° · cotovelos levemente fechados"},
+        {n:"Crucifixo máquina/cabo", s:"3×12", obs:"Leve — foco no alongamento"},
+        {n:"Tríceps corda",          s:"3×10", obs:"Abre a corda no final"},
+        {n:"Tríceps testa",          s:"3×10", obs:"Cotovelos fixos · só o antebraço move"},
+      ]},
+    f2:{ nome:"💪 Peito + Tríceps — Push A (Fase 2 · Heavy)",
+      exercicios:[
+        {n:"Supino reto barra",           s:"4×5",  obs:"Pesado — 1 rep da falha · descida 3–4s · descanso 3min"},
+        {n:"Supino inclinado halter",     s:"3×8",  obs:"Pesado · foco no alongamento na descida"},
+        {n:"Crucifixo cabo",              s:"3×10", obs:"Moderado-pesado · amplitude máxima"},
+        {n:"Tríceps testa barra W",       s:"3×8",  obs:"Pesado · descida 3s · cotovelos fixos"},
+        {n:"Mergulho em banco (lastro)",  s:"3×8",  obs:"Adiciona peso no colo · cotovelos pra trás"},
+      ]},
+  },
+  "Terça": {
+    f1:{ nome:"🔙 Costas + Bíceps — Pull A (Fase 1)",
+      exercicios:[
+        {n:"Barra fixa / Puxada frontal",s:"4×8",  obs:"Assistida se precisar · peito até a barra"},
+        {n:"Remada curvada barra",        s:"3×8",  obs:"Moderado · técnica primeiro · não balança"},
+        {n:"Remada baixa polia",          s:"3×10", obs:"Aperta escápulas no final"},
+        {n:"Rosca direta barra",          s:"3×10", obs:"Cotovelo fixo · descida 3s"},
+        {n:"Rosca martelo",               s:"3×10", obs:"Sem balanço de tronco"},
+      ],
+      abs:{ titulo:"🏠 Abdômen — Dia A (em casa, à noite)",
+        exercicios:[
+          {n:"Crunch",            s:"3×20",          obs:""},
+          {n:"Elevação de pernas",s:"3×15",          obs:""},
+          {n:"Bicicleta no ar",   s:"3×20 cada lado",obs:""},
+          {n:"Prancha",           s:"3×40s",         obs:"Descanso 30s entre séries"},
+        ]}},
+    f2:{ nome:"🔙 Costas + Bíceps — Pull A (Fase 2 · Heavy)",
+      exercicios:[
+        {n:"Barra fixa com lastro",    s:"4×5",  obs:"Adiciona peso quando fizer 4×6 limpo · descida 3s"},
+        {n:"Remada curvada barra",     s:"4×6",  obs:"Pesado · cotovelo rente · tronco estável"},
+        {n:"Remada baixa polia",       s:"3×8",  obs:"Pesado · aperta escápulas"},
+        {n:"Rosca direta barra",       s:"3×6",  obs:"Pesado — 2 rep da falha · descida 3–4s"},
+        {n:"Rosca banco inclinado",    s:"3×8",  obs:"Reintroduzido F2 · tensão no ponto de alongamento"},
+      ],
+      abs:{ titulo:"🏠 Abdômen — Dia A (em casa, à noite)",
+        exercicios:[
+          {n:"Crunch",            s:"3×20",          obs:""},
+          {n:"Elevação de pernas",s:"3×15",          obs:""},
+          {n:"Bicicleta no ar",   s:"3×20 cada lado",obs:""},
+          {n:"Prancha",           s:"3×40s",         obs:"Descanso 30s entre séries"},
+        ]}},
+  },
+  "Quarta": {
+    f1:{ nome:"🦵 Perna — Legs A (Fase 1)",
+      exercicios:[
+        {n:"Agachamento livre", s:"4×8",  obs:"60–70% · desça até 90° · joelho segue o pé"},
+        {n:"Leg press",         s:"3×10", obs:"Amplitude total · não trava o joelho"},
+        {n:"Stiff barra",       s:"3×10", obs:"Empurra quadril pra trás · descida 3s"},
+        {n:"Mesa flexora",      s:"3×10", obs:"Descida controlada · não deixa cair"},
+        {n:"Panturrilha em pé", s:"3×15", obs:"Calcanhar bem baixo na descida"},
+      ]},
+    f2:{ nome:"🦵 Perna — Legs A (Fase 2 · Heavy)",
+      exercicios:[
+        {n:"Agachamento livre", s:"4×5",  obs:"Pesado — o mais importante · descida 3s · descanso 3–4min"},
+        {n:"Leg press",         s:"3×8",  obs:"Pesado · amplitude total"},
+        {n:"Stiff barra",       s:"4×6",  obs:"Pesado · empurra quadril pra trás"},
+        {n:"Mesa flexora",      s:"3×8",  obs:"Pesado · descida controlada"},
+        {n:"Panturrilha em pé", s:"4×8",  obs:"Carga alta · amplitude total"},
+      ]},
+  },
+  "Quinta": {
+    f1:{ nome:"🏔️ Ombro + Trapézio — Push B (Fase 1)",
+      exercicios:[
+        {n:"Desenvolvimento halter", s:"4×8",  obs:"Não trava cotovelo em cima"},
+        {n:"Elevação lateral ⭐",    s:"4×12", obs:"Cotovelo levemente dobrado · levanta até o ombro"},
+        {n:"Arnold press",           s:"3×10", obs:"Rotação completa do punho"},
+        {n:"Face pull ⭐",           s:"4×12", obs:"Cotovelos altos · puxar até a orelha · protege o ombro"},
+        {n:"Encolhimento halter",    s:"3×12", obs:"Pausa 1s no topo"},
+      ],
+      abs:{ titulo:"🏠 Abdômen — Dia B (em casa, à noite)",
+        exercicios:[
+          {n:"Elevação pernas + quadril",s:"3×12", obs:""},
+          {n:"Russian twist",            s:"3×20", obs:""},
+          {n:"Mountain climber",         s:"3×30", obs:""},
+          {n:"Hollow hold",              s:"3×30s",obs:""},
+        ]}},
+    f2:{ nome:"🏔️ Ombro + Trapézio — Push B (Fase 2 · Heavy)",
+      exercicios:[
+        {n:"Desenvolvimento barra/halter",s:"4×6",  obs:"Pesado · descida 3s · descanso 2–3min"},
+        {n:"Elevação lateral ⭐",         s:"4×10", obs:"Moderado-pesado · levanta até o ombro · pausa 1s"},
+        {n:"Arnold press",                s:"3×8",  obs:"Rotação completa do punho"},
+        {n:"Face pull ⭐⭐",              s:"4×12", obs:"NUNCA pule · cotovelos altos · puxar até a orelha"},
+        {n:"Encolhimento pesado",         s:"4×8",  obs:"Pesado · pausa 1s · não rotaciona o ombro"},
+      ],
+      abs:{ titulo:"🏠 Abdômen — Dia B (em casa, à noite)",
+        exercicios:[
+          {n:"Elevação pernas + quadril",s:"3×12", obs:""},
+          {n:"Russian twist",            s:"3×20", obs:""},
+          {n:"Mountain climber",         s:"3×30", obs:""},
+          {n:"Hollow hold",              s:"3×30s",obs:""},
+        ]}},
+  },
+  "Sexta": {
+    f1:{ nome:"🔄 Full Body — Pump Day (Fase 1)",
+      exercicios:[
+        {n:"Supino inclinado halter",            s:"3×10", obs:"4 dias de descanso do peito — ok"},
+        {n:"Remada cavalinho unilateral",         s:"3×10", obs:"Cada braço · costas já treinadas terça"},
+        {n:"Elevação lateral",                    s:"3×15", obs:"Leve — pump finalizador de ombro"},
+        {n:"Rosca direta + Tríceps corda bi-set", s:"3×12", obs:"Sem descanso entre os dois"},
+        {n:"Encolhimento trapézio",               s:"3×12", obs:"Encerra a semana com trap pesado"},
+      ]},
+    f2:{ nome:"🔄 Full Body — Pump Day (Fase 2 · Heavy)",
+      exercicios:[
+        {n:"Supino inclinado halter",            s:"3×8",  obs:"4 dias de descanso — pode carregar pesado"},
+        {n:"Remada cavalinho unilateral",         s:"3×8",  obs:"Pesado · cada braço"},
+        {n:"Elevação lateral",                    s:"3×15", obs:"Moderado — pump finalizador"},
+        {n:"Rosca direta + Tríceps corda bi-set", s:"4×10", obs:"4 séries na F2 · pump máximo"},
+        {n:"Encolhimento trapézio",               s:"3×10", obs:"Pesado · encerra a semana"},
+      ]},
+  },
+};
+
+const SCHEDULE = {
+  "Segunda":[
+    {hora:"07:45",fim:"09:00",label:"Acordar + Deslocamento",tipo:"descanso",emoji:"🌅"},
+    {hora:"09:00",fim:"10:15",label:"Academia",tipo:"academia",emoji:"🏋️",treino:"Segunda"},
+    {hora:"10:15",fim:"11:40",label:"Volta + Banho + Refeição",tipo:"descanso",emoji:"🚿"},
+    {hora:"11:40",fim:"13:10",label:"Inglês",tipo:"estudo",emoji:"🇺🇸"},
+    {hora:"13:10",fim:"14:40",label:"Programação",tipo:"estudo",emoji:"💻"},
+    {hora:"14:40",fim:"15:10",label:"Almoço / Descanso",tipo:"descanso",emoji:"🍽️"},
+    {hora:"15:10",fim:"16:30",label:"Revisão CEFET + Trabalhos",tipo:"revisao",emoji:"📖"},
+    {hora:"16:30",fim:"17:00",label:"Lazer",tipo:"lazer",emoji:"🎮"},
+    {hora:"17:00",fim:"21:30",label:"CEFET",tipo:"cefet",emoji:"🏫"},
+  ],
+  "Terça":[
+    {hora:"07:45",fim:"09:00",label:"Acordar + Deslocamento",tipo:"descanso",emoji:"🌅"},
+    {hora:"09:00",fim:"10:15",label:"Academia",tipo:"academia",emoji:"🏋️",treino:"Terça"},
+    {hora:"10:15",fim:"11:40",label:"Volta + Banho + Refeição",tipo:"descanso",emoji:"🚿"},
+    {hora:"11:40",fim:"13:10",label:"Inglês",tipo:"estudo",emoji:"🇺🇸"},
+    {hora:"13:10",fim:"14:40",label:"Programação",tipo:"estudo",emoji:"💻"},
+    {hora:"14:40",fim:"15:10",label:"Almoço / Descanso",tipo:"descanso",emoji:"🍽️"},
+    {hora:"15:10",fim:"16:30",label:"Revisão CEFET + Trabalhos",tipo:"revisao",emoji:"📖"},
+    {hora:"16:30",fim:"17:00",label:"Lazer",tipo:"lazer",emoji:"🎮"},
+    {hora:"17:00",fim:"21:30",label:"CEFET",tipo:"cefet",emoji:"🏫"},
+  ],
+  "Quarta":[
+    {hora:"07:45",fim:"09:00",label:"Acordar + Deslocamento",tipo:"descanso",emoji:"🌅"},
+    {hora:"09:00",fim:"10:15",label:"Academia",tipo:"academia",emoji:"🏋️",treino:"Quarta"},
+    {hora:"10:15",fim:"11:40",label:"Volta + Banho + Refeição",tipo:"descanso",emoji:"🚿"},
+    {hora:"11:40",fim:"13:10",label:"Inglês",tipo:"estudo",emoji:"🇺🇸"},
+    {hora:"13:10",fim:"14:40",label:"Programação",tipo:"estudo",emoji:"💻"},
+    {hora:"14:40",fim:"15:10",label:"Almoço / Descanso",tipo:"descanso",emoji:"🍽️"},
+    {hora:"15:10",fim:"16:30",label:"Revisão CEFET + Trabalhos",tipo:"revisao",emoji:"📖"},
+    {hora:"16:30",fim:"17:00",label:"Lazer",tipo:"lazer",emoji:"🎮"},
+    {hora:"17:00",fim:"21:30",label:"CEFET",tipo:"cefet",emoji:"🏫"},
+  ],
+  "Quinta":[
+    {hora:"07:45",fim:"09:00",label:"Acordar + Deslocamento",tipo:"descanso",emoji:"🌅"},
+    {hora:"09:00",fim:"10:15",label:"Academia",tipo:"academia",emoji:"🏋️",treino:"Quinta"},
+    {hora:"10:15",fim:"11:40",label:"Volta + Banho + Refeição",tipo:"descanso",emoji:"🚿"},
+    {hora:"11:40",fim:"13:10",label:"Inglês",tipo:"estudo",emoji:"🇺🇸"},
+    {hora:"13:10",fim:"14:40",label:"Programação",tipo:"estudo",emoji:"💻"},
+    {hora:"14:40",fim:"15:10",label:"Almoço / Descanso",tipo:"descanso",emoji:"🍽️"},
+    {hora:"15:10",fim:"16:30",label:"Revisão CEFET + Trabalhos",tipo:"revisao",emoji:"📖"},
+    {hora:"16:30",fim:"17:00",label:"Lazer",tipo:"lazer",emoji:"🎮"},
+    {hora:"17:00",fim:"21:30",label:"CEFET",tipo:"cefet",emoji:"🏫"},
+  ],
+  "Sexta":[
+    {hora:"07:45",fim:"09:00",label:"Acordar + Deslocamento",tipo:"descanso",emoji:"🌅"},
+    {hora:"09:00",fim:"10:15",label:"Academia",tipo:"academia",emoji:"🏋️",treino:"Sexta"},
+    {hora:"10:15",fim:"11:40",label:"Volta + Banho + Refeição",tipo:"descanso",emoji:"🚿"},
+    {hora:"11:40",fim:"13:10",label:"Inglês",tipo:"estudo",emoji:"🇺🇸"},
+    {hora:"13:10",fim:"14:40",label:"Programação",tipo:"estudo",emoji:"💻"},
+    {hora:"14:40",fim:"15:10",label:"Almoço / Descanso",tipo:"descanso",emoji:"🍽️"},
+    {hora:"15:10",fim:"16:30",label:"Revisão CEFET + Trabalhos",tipo:"revisao",emoji:"📖"},
+    {hora:"16:30",fim:"17:00",label:"Lazer",tipo:"lazer",emoji:"🎮"},
+    {hora:"17:00",fim:"21:30",label:"CEFET",tipo:"cefet",emoji:"🏫"},
+  ],
+};
+
+const BLOCK_COLORS={
+  estudo:  {bg:'rgba(2,132,199,0.1)',border:'#0284c7',text:'#7dd3fc'},
+  revisao: {bg:'rgba(217,119,6,0.1)',border:'#d97706',text:'#fcd34d'},
+  cefet:   {bg:'rgba(108,52,131,0.1)',border:'#7c3aed',text:'#c4b5fd'},
+  lazer:   {bg:'rgba(22,163,74,0.1)',border:'#16a34a',text:'#86efac'},
+  descanso:{bg:'rgba(71,85,105,0.1)',border:'#475569',text:'#94a3b8'},
+  academia:{bg:'rgba(139,0,0,0.12)',border:'#c0392b',text:'#fca5a5'},
+};
+
+const INGLES=[
+  {dia:"Segunda",emoji:"📖",foco:"Vocabulário — Mairo Vergara",cor:"#3b82f6",atividades:[
+    {tempo:"40min",titulo:"Aula do Mairo Vergara",detalhe:"Assista 1-2 aulas. Anote palavras novas no Anki.",dica:"💡 Anote TODAS as palavras — você vai revisar na sexta.",xp:25},
+    {tempo:"30min",titulo:"Flashcards no Anki",detalhe:"Crie flashcards com palavras novas. Mínimo 15.",dica:"📱 Anki grátis — use no celular no ônibus/academia",xp:20},
+    {tempo:"20min",titulo:"Revisão do Anki",detalhe:"Revise os flashcards sugeridos. Nunca pule.",dica:"🔁 Revisão espaçada é científica — confie no processo",xp:15},
+  ]},
+  {dia:"Terça",emoji:"📘",foco:"Connect 1 — Gramática",cor:"#8b5cf6",atividades:[
+    {tempo:"40min",titulo:"Unidade do Connect 1",detalhe:"Leia em voz alta → vocabulário → exercícios. 1 unidade/semana.",dica:"📖 Entender fundo vale mais que avançar rápido",xp:30},
+    {tempo:"30min",titulo:"Áudio do Connect 1",detalhe:"Ouça e repita imitando ritmo e pronúncia.",dica:"🎧 'Connect Cambridge audio Unit [número]' no YouTube",xp:20},
+    {tempo:"20min",titulo:"Escreva 5 frases",detalhe:"Pegue a gramática do dia e escreva 5 frases da sua vida. Cole no Claude para correção.",dica:"✍️ Prompt: 'Correct my English and explain each mistake'",xp:15},
+  ]},
+  {dia:"Quarta",emoji:"👂",foco:"Listening & Speaking",cor:"#10b981",atividades:[
+    {tempo:"30min",titulo:"Podcast para iniciantes",detalhe:"BBC 'English We Speak' ou 'English with Lucy'. Ouça 2x.",dica:"🎧 YouTube: 'BBC Learning English' — episódios curtos",xp:20},
+    {tempo:"30min",titulo:"Shadowing",detalhe:"Ouça uma frase, pause, repita imitando pronúncia. 1 página.",dica:"🗣️ Grave sua voz e compare — a diferença te motiva",xp:20},
+    {tempo:"30min",titulo:"Conversa com IA",detalhe:"Use Claude: 'Let's practice English. I'm a beginner. Talk slowly and correct my mistakes.'",dica:"🤖 Sem vergonha — a IA corrige sem te julgar",xp:25},
+  ]},
+  {dia:"Quinta",emoji:"📗",foco:"Connect 3 — Expansão",cor:"#f59e0b",atividades:[
+    {tempo:"40min",titulo:"Leitura no Connect 3",detalhe:"Use para leitura. Entenda pelo contexto. Sublinhe o que não entende.",dica:"⚠️ Normal não entender tudo — é o objetivo",xp:30},
+    {tempo:"20min",titulo:"Vocabulário do Connect 3 no Anki",detalhe:"10 palavras sublinhadas com exemplo do livro.",dica:"📝 Priorize palavras que aparecem mais de uma vez",xp:15},
+    {tempo:"30min",titulo:"Mairo Vergara — reforço",detalhe:"Mais uma aula conectando com o que leu no Connect 3.",dica:"🔗 Mesma palavra em 2 fontes = memória garantida",xp:20},
+  ]},
+  {dia:"Sexta",emoji:"🔄",foco:"Revisão da Semana",cor:"#e11d48",atividades:[
+    {tempo:"30min",titulo:"Revisão completa do Anki",detalhe:"TODOS os flashcards pendentes. Meta: 75 palavras novas.",dica:"🃏 75/semana = 300/mês = intermediário em menos de 1 ano",xp:25},
+    {tempo:"30min",titulo:"Revisão do Connect 1",detalhe:"Releia a unidade. Refaça os exercícios que errou.",dica:"📖 Revisar antes de dormir consolida o aprendizado",xp:20},
+    {tempo:"30min",titulo:"Correção de erros",detalhe:"Pegue os erros da semana e crie frases corretas.",dica:"✅ Erro corrigido + nova frase = aprendizado real",xp:20},
+  ]},
+];
+
+// ============ STATE ============
+let devState = JSON.parse(localStorage.getItem('darlan_dev')||'{}');
+let engState = JSON.parse(localStorage.getItem('darlan_eng')||'{}');
+let weekTasks = JSON.parse(localStorage.getItem('darlan_week')||'[]');
+let phaseNotes = JSON.parse(localStorage.getItem('darlan_notes')||'{}');
+let streakData = JSON.parse(localStorage.getItem('darlan_streak')||'{"count":0,"lastDate":""}');
+let dailyActivity = JSON.parse(localStorage.getItem('darlan_activity')||'{}');
+let missions = JSON.parse(localStorage.getItem('darlan_missions')||'[]');
+let missionDate = localStorage.getItem('darlan_mdate')||'';
+let taskHistory = JSON.parse(localStorage.getItem('darlan_history')||'[]');
+let startDate = localStorage.getItem('darlan_start') || new Date().toISOString().split('T')[0];
+if(!localStorage.getItem('darlan_start')) localStorage.setItem('darlan_start', startDate);
+let histFilter = 'all';
+
+function getWeekKey(){const n=new Date(),s=new Date(n.getFullYear(),0,1);return n.getFullYear()+'-w'+Math.ceil(((n-s)/86400000+s.getDay()+1)/7);}
+const wk=getWeekKey();
+if(localStorage.getItem('darlan_wk')!==wk){weekTasks=[];localStorage.setItem('darlan_wk',wk);localStorage.setItem('darlan_week','[]');}
+
+// ============ XP ============
+function getDevXP(){return PHASES.reduce((s,p)=>s+p.tasks.reduce((s2,t)=>s2+(devState[t.id]?t.xp:0),0),0);}
+function getEngXP(){return INGLES.reduce((s,d)=>s+d.atividades.reduce((s2,a,i)=>s2+(engState[d.dia+'-'+i]?a.xp:0),0),0);}
+function getTotalXP(){return getDevXP()+getEngXP();}
+function getLevel(xp){for(let i=LEVELS.length-1;i>=0;i--)if(xp>=LEVELS[i].min)return LEVELS[i];return LEVELS[0];}
+function getDone(){return Object.values(devState).filter(Boolean).length;}
+function getEngDone(){let c=0;INGLES.forEach(d=>d.atividades.forEach((_,i)=>{if(engState[d.dia+'-'+i])c++;}));return c;}
+
+// ============ STREAK ============
+function updateStreak(){
+  const today=new Date().toDateString();
+  if(streakData.lastDate===today)return;
+  const yesterday=new Date(Date.now()-86400000).toDateString();
+  if(streakData.lastDate===yesterday){streakData.count++;}
+  else{streakData.count=1;}
+  streakData.lastDate=today;
+  localStorage.setItem('darlan_streak',JSON.stringify(streakData));
+}
+function recordActivity(){
+  const today=new Date().toISOString().split('T')[0];
+  dailyActivity[today]=(dailyActivity[today]||0)+1;
+  localStorage.setItem('darlan_activity',JSON.stringify(dailyActivity));
+}
+
+// ============ CHARACTER ============
+// ============================================================
+// PIXEL ART CHARACTER ENGINE v3
+// Canvas 80x80, S=2 (each sprite pixel = 2x2 real px → 40x40 grid)
+// Sprite lives in columns 6-25, rows 1-35 (pixel coords)
+// Animations: idle · walk · attack · snap (finger snap!)
+// Levels 1-9 with full evolution
+// ============================================================
+
+let charLevel     = 1;
+let charAnim      = 'idle';
+let charFrame     = 0;
+let charTick      = 0;
+let charSub       = 0;   // frames inside current anim cycle
+let charWalkTimer = 0;
+let charWalkDir   = 1;
+let charFlip      = false;
+let charAnimRAF   = null;
+let charSnapParticles = [];
+
+// ── PALETTE ─────────────────────────────────────────────────
+function gp(lv){
+  return {
+    K:  [8,  6,  12],   // outline black
+    SK: [232,196,154],  // skin
+    SS: [200,144, 96],  // skin shadow
+    SH: [248,220,182],  // skin highlight
+    // Hair evolves:
+    // lv1-3: near-black with dark-grey highlight
+    // lv4-6: very dark purple-black, silver streak
+    // lv7+:  white with grey sheen (Kaneki white hair arc)
+    HB: lv>=7?[210,210,220]:lv>=4?[24,18,32]:[16,10,8],
+    HH: lv>=7?[245,245,252]:lv>=4?[52,44,68]:[38,28,18],
+    HS: lv>=7?[155,155,168]:lv>=4?[10,6,16]: [6,3,2],
+    HW: [238,238,248],  // white streak
+    // Cloth
+    CB: lv>=5?[14,9,22] :[26,20,38],  // cloth base
+    CH: lv>=5?[28,20,40]:[42,34,58],  // cloth highlight
+    CS: lv>=5?[4, 2, 8] :[12,8,18],   // cloth shadow
+    // Eyes
+    EB: lv>=3?[6,0,4]   :[238,232,228], // eye base (dark sclera vs white)
+    EI: lv>=3?[192,40,24]:[30,22,44],   // iris
+    EP: [4,0,2],                         // pupil
+    EH: [255,255,255],
+    // Mask (lv5+)
+    MB: [20,10,28],
+    ME: [192,40,24],
+    // Kagune (red arcs, thick, bead-art style)
+    KB: lv>=8?[130,5,5]  :[196,32,20],  // kagune base
+    KH: lv>=8?[180,15,15]:[228,70,45],  // kagune highlight
+    KS: lv>=8?[60,0,0]   :[100,8,4],    // kagune shadow
+    // Gold (lv8+ hair pin / lv9 aura)
+    GO: [201,168,76],
+    // White / red utils
+    WH: [245,242,255],
+    RD: [192,40,24],
+  };
+}
+
+// ── DRAW HELPERS ────────────────────────────────────────────
+const S = 2; // scale factor
+
+function dp(ctx,x,y,c){
+  ctx.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`;
+  ctx.fillRect(x*S,y*S,S,S);
+}
+function dr(ctx,x,y,w,h,c){
+  ctx.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`;
+  ctx.fillRect(x*S,y*S,w*S,h*S);
+}
+function drow(ctx,x,y,w,c){ dr(ctx,x,y,w,1,c); }
+function dcol(ctx,x,y,h,c){ dr(ctx,x,y,1,h,c); }
+function setGlow(ctx,c,b){
+  ctx.shadowColor=`rgba(${c[0]},${c[1]},${c[2]},0.9)`;
+  ctx.shadowBlur=b;
+}
+function noGlow(ctx){ ctx.shadowBlur=0; }
+
+// ── KAGUNE ARCS ─────────────────────────────────────────────
+// Drawn as thick bezier arcs to match the bead-art reference:
+// big sweeping C-shapes left and right of the body
+function drawKagune(ctx,lv,frame,anim,p){
+  if(lv<3) return;
+  const bob = Math.sin(frame*0.07)*2;
+  const attackSwing = anim==='attack' ? Math.sin(frame*0.35)*5 : 0;
+  const snapWave    = anim==='snap'   ? Math.sin(frame*0.5)*3  : 0;
+
+  // number of arcs scales with level
+  // Each "arm" = one thick sweeping bezier
+  const arms = [];
+
+  // Primary left arc (always if lv>=3)
+  arms.push({ side:-1, ry:0,   size: lv>=6?9:lv>=4?7:5, thick: lv>=7?8:lv>=5?6:4 });
+  // Primary right arc
+  if(lv>=4) arms.push({ side:1, ry:0, size: lv>=6?9:lv>=4?7:5, thick: lv>=7?8:lv>=5?6:4 });
+  // Secondary arcs
+  if(lv>=6){
+    arms.push({ side:-1, ry:-4, size:7, thick:5 });
+    arms.push({ side: 1, ry:-4, size:7, thick:5 });
+  }
+  // Tertiary arcs (lv8+)
+  if(lv>=8){
+    arms.push({ side:-1, ry:4,  size:6, thick:4 });
+    arms.push({ side: 1, ry:4,  size:6, thick:4 });
+  }
+  // Extra wild arcs (lv9)
+  if(lv>=9){
+    arms.push({ side:-1, ry:-8, size:5, thick:3 });
+    arms.push({ side: 1, ry:-8, size:5, thick:3 });
+  }
+
+  // origin: lower back of body in pixel coords → center ≈ (16, 26) * S
+  const ox = 16*S, oy = 26*S;
+
+  arms.forEach((a,i)=>{
+    const waveOff = bob*(i%2===0?1:-1) + attackSwing*(a.side) + snapWave*(i%2===0?0.5:-0.5);
+    const sz = a.size * S;
+    // control points produce the big C-arc from the bead art
+    const tipX  = ox + a.side*(sz*1.4);
+    const tipY  = oy - sz*1.0 + waveOff;
+    const cp1x  = ox + a.side*(sz*0.5);
+    const cp1y  = oy + sz*0.6 + a.ry*S + waveOff*0.5;
+    const cp2x  = ox + a.side*(sz*1.5);
+    const cp2y  = oy + sz*0.1 + a.ry*S + waveOff*0.8;
+
+    // shadow pass
+    ctx.strokeStyle=`rgb(${p.KS[0]},${p.KS[1]},${p.KS[2]})`;
+    ctx.lineWidth = a.thick+2;
+    ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(ox,oy);
+    ctx.bezierCurveTo(cp1x,cp1y,cp2x,cp2y,tipX,tipY);
+    ctx.stroke();
+
+    // main colour
+    if(lv>=6) setGlow(ctx,p.KB,lv>=8?12:7);
+    ctx.strokeStyle=`rgb(${p.KB[0]},${p.KB[1]},${p.KB[2]})`;
+    ctx.lineWidth = a.thick;
+    ctx.beginPath();
+    ctx.moveTo(ox,oy);
+    ctx.bezierCurveTo(cp1x,cp1y,cp2x,cp2y,tipX,tipY);
+    ctx.stroke();
+    noGlow(ctx);
+
+    // highlight stripe
+    ctx.strokeStyle=`rgb(${p.KH[0]},${p.KH[1]},${p.KH[2]})`;
+    ctx.lineWidth = Math.max(1,a.thick-3);
+    ctx.globalAlpha=0.55;
+    ctx.beginPath();
+    ctx.moveTo(ox+a.side*S,oy-S);
+    ctx.bezierCurveTo(
+      cp1x+a.side*S,cp1y-S,
+      cp2x+a.side*S,cp2y-S,
+      tipX+a.side*S,tipY-S
+    );
+    ctx.stroke();
+    ctx.globalAlpha=1;
+  });
+  ctx.lineWidth=1;
+}
+
+// ── BODY ────────────────────────────────────────────────────
+// Chibi proportions: big head, short legs, wide torso
+// Base positions (pixel units, ×S for canvas):
+// Head: cols 9-22, rows 3-17
+// Torso: cols 11-20, rows 17-25
+// Arms: cols 7-10 left, 21-24 right, rows 17-25
+// Legs: cols 12-15 left, 17-20 right, rows 25-33
+
+function drawBody(ctx,lv,frame,anim,p){
+  // animation offsets
+  let bob=0, lLeg=0,rLeg=0, lArm=0,rArm=0, lAX=0,rAX=0, torsoLean=0;
+
+  if(anim==='idle'){
+    bob = Math.round(Math.sin(frame*0.06)*0.7); // gentle float
+  }
+  if(anim==='walk'){
+    const wt=frame*0.22;
+    lLeg = Math.round(Math.sin(wt)*2);
+    rLeg = Math.round(-Math.sin(wt)*2);
+    lArm = Math.round(-Math.sin(wt)*1.5);
+    rArm = Math.round(Math.sin(wt)*1.5);
+    torsoLean = Math.round(Math.sin(wt)*0.5);
+  }
+  if(anim==='attack'){
+    // right arm punches out hard
+    rAX = Math.min(4, Math.round(charSub*0.4));
+    rArm = -2;
+    lArm =  1;
+    lLeg =  1; rLeg=-1;
+    torsoLean = 1;
+  }
+  if(anim==='snap'){
+    // right arm raises, fingers out — then snaps
+    const snapProgress = charSub/20;
+    rArm = -Math.round(snapProgress*3);
+    rAX  =  Math.round(Math.sin(charSub*0.3)*1);
+    lArm =  1;
+  }
+
+  const b=bob;
+
+  // ── TORSO ──
+  // main body block
+  dr(ctx, 11+torsoLean, 17+b, 10,8, p.CB);
+  // highlight left edge
+  dcol(ctx, 11+torsoLean, 17+b, 8, p.CH);
+  // shadow right edge
+  dcol(ctx, 20+torsoLean, 17+b, 8, p.CS);
+  // collar
+  drow(ctx, 12+torsoLean, 17+b, 8, p.K);
+
+  // torso details by level
+  if(lv>=3){
+    // tie / neck guard
+    dr(ctx,14+torsoLean,18+b,3,3,p.K);
+    dp(ctx,15+torsoLean,19+b,p.RD);  // red accent
+  }
+  if(lv>=5){
+    // dark uniform details
+    dcol(ctx,13+torsoLean,18+b,6,p.CS);
+    dcol(ctx,18+torsoLean,18+b,6,p.CS);
+    // belt line
+    drow(ctx,11+torsoLean,22+b,10,p.K);
+    dp(ctx,15+torsoLean,22+b,p.RD);
+    dp(ctx,16+torsoLean,22+b,p.RD);
+  }
+  if(lv>=7){
+    // armored plate down center
+    dr(ctx,14+torsoLean,18+b,4,4,p.CS);
+    drow(ctx,14+torsoLean,18+b,4,p.K);
+    dp(ctx,15+torsoLean,19+b,p.GO);  // gold insignia
+    dp(ctx,16+torsoLean,19+b,p.GO);
+  }
+
+  // ── ARMS ──
+  // LEFT ARM
+  dr(ctx, 8+lAX, 17+b+lArm, 3,5, p.CB);
+  dp(ctx, 8,     22+b+lArm,  p.SK);  // left hand
+  dp(ctx, 9,     22+b+lArm,  p.SK);
+  if(lv>=6){  // left arm guard
+    drow(ctx,8,20+b+lArm,3,p.RD);
+  }
+
+  // RIGHT ARM
+  dr(ctx, 21+rAX, 17+b+rArm, 3,5, p.CB);
+  dp(ctx, 21+rAX, 22+b+rArm,  p.SK);  // right hand
+  dp(ctx, 22+rAX, 22+b+rArm,  p.SK);
+  if(lv>=6){  // right arm guard
+    drow(ctx,21+rAX,20+b+rArm,3,p.RD);
+  }
+
+  // ATTACK fist glow
+  if(anim==='attack' && lv>=4){
+    setGlow(ctx,p.KB,8);
+    dp(ctx,21+rAX,22+b+rArm,p.RD);
+    dp(ctx,22+rAX,22+b+rArm,p.RD);
+    noGlow(ctx);
+  }
+
+  // SNAP raised hand + spark
+  if(anim==='snap'){
+    // finger pointing up on right hand
+    dp(ctx, 22+rAX, 21+b+rArm, p.SK);  // raised finger
+    dp(ctx, 22+rAX, 20+b+rArm, p.SK);
+    // snap spark at tip
+    if(charSub>=16 && charSub<=22){
+      const sf=charSub-16;
+      const sx=(22+rAX)*S, sy=(19+b+rArm)*S;
+      // star-burst spark
+      setGlow(ctx,p.GO,10);
+      ctx.fillStyle=`rgb(${p.GO[0]},${p.GO[1]},${p.GO[2]})`;
+      [[0,-2],[1,-1],[2,0],[1,1],[0,2],[-1,1],[-2,0],[-1,-1]].forEach(([dx,dy])=>{
+        if(Math.random()>0.4) ctx.fillRect(sx+dx*S, sy+dy*S, S,S);
+      });
+      noGlow(ctx);
+      // snap particles
+      if(sf===0){
+        for(let k=0;k<12;k++){
+          charSnapParticles.push({
+            x:sx,y:sy,
+            vx:(Math.random()-0.5)*3,
+            vy:(Math.random()-1.5)*3,
+            life:18+Math.floor(Math.random()*10),
+            c: Math.random()>0.5?p.GO:p.RD,
+          });
+        }
+      }
+    }
+  }
+
+  // ── LEGS ──
+  // LEFT LEG
+  dr(ctx, 12, 25+b, 4,5, p.CB);
+  dr(ctx, 11, 30+b+lLeg, 5,2, p.K);  // boot
+  dp(ctx, 11, 31+b+lLeg, p.CH);       // boot highlight
+  // LEFT LEG WALK OFFSET
+  if(anim==='walk'){
+    dr(ctx, 12, 25+b, 4,5, p.CB);
+    dr(ctx, 11, 30+b+lLeg, 5,2, p.K);
+    dp(ctx, 11, 31+b+lLeg, p.CH);
+  }
+
+  // RIGHT LEG
+  dr(ctx, 17, 25+b, 4,5, p.CB);
+  dr(ctx, 17, 30+b+rLeg, 5,2, p.K);
+  dp(ctx, 17, 31+b+rLeg, p.CH);
+}
+
+// ── HEAD ────────────────────────────────────────────────────
+function drawHead(ctx,lv,frame,anim,p){
+  const bob  = anim==='idle'?Math.round(Math.sin(frame*0.06)*0.7):0;
+  const lean = anim==='attack'?1:0;
+  const b    = bob;
+
+  // ── HAIR (drawn before head so it goes behind ears) ──
+  drawHair(ctx,lv,frame,anim,p,b,lean);
+
+  // ── HEAD BASE ──
+  // Round chibi head: 14 wide, 12 tall, rows 4-15
+  // Outline
+  dr(ctx, 9+lean, 4+b, 14,12, p.K);
+  // fill
+  dr(ctx,10+lean, 5+b, 12,10, p.SK);
+  // forehead highlight
+  drow(ctx,11+lean, 5+b, 8,  p.SH);
+  drow(ctx,12+lean, 6+b, 6,  p.SH);
+  // chin shadow
+  drow(ctx,11+lean,14+b, 8,  p.SS);
+  // cheek blush (lv1-4 only — gets covered by mask)
+  if(lv<=4){
+    dp(ctx,10+lean,11+b,p.SS);
+    dp(ctx,21+lean,11+b,p.SS);
+  }
+
+  // ── EARS ──
+  dp(ctx, 9+lean,10+b,p.SK);
+  dp(ctx,22+lean,10+b,p.SK);
+  dp(ctx, 9+lean,11+b,p.SS);
+  dp(ctx,22+lean,11+b,p.SS);
+
+  // ── EYES ──
+  drawEyes(ctx,lv,frame,anim,p,b,lean);
+
+  // ── NOSE ──
+  dp(ctx,15+lean,12+b,p.SS);
+
+  // ── MOUTH ──
+  if(lv>=7){
+    // serious set mouth
+    drow(ctx,13+lean,13+b,6,p.K);
+  } else if(lv>=4){
+    dp(ctx,13+lean,13+b,p.SS);
+    dp(ctx,14+lean,14+b,p.SS);
+    dp(ctx,18+lean,14+b,p.SS);
+    dp(ctx,19+lean,13+b,p.SS);
+  } else {
+    // slight smile
+    dp(ctx,13+lean,13+b,p.SS);
+    dp(ctx,14+lean,14+b,p.SS);
+    dp(ctx,17+lean,14+b,p.SS);
+    dp(ctx,18+lean,13+b,p.SS);
+  }
+
+  // ── NECK ──
+  dr(ctx,14+lean,16+b,4,2,p.SK);
+  drow(ctx,14+lean,16+b,4,p.SS);
+
+  // ── MASK (lv5+) ──
+  if(lv>=5){
+    const maskA=Math.min(1,(lv-4)*0.6);
+    ctx.globalAlpha=maskA;
+    // half-mask covers lower face rows 11-15
+    dr(ctx,10+lean,11+b,12,5,p.MB);
+    // mask edge
+    drow(ctx,10+lean,11+b,12,p.ME);
+    // stitches
+    if(lv>=6){
+      dp(ctx,11+lean,12+b,p.ME); dp(ctx,11+lean,13+b,p.ME);
+      dp(ctx,20+lean,12+b,p.ME); dp(ctx,20+lean,13+b,p.ME);
+      // center bolt
+      dp(ctx,15+lean,12+b,p.ME); dp(ctx,16+lean,12+b,p.ME);
+      dp(ctx,15+lean,13+b,p.K);  dp(ctx,16+lean,13+b,p.K);
+    }
+    // teeth showing (lv7+, serious expression)
+    if(lv>=7){
+      drow(ctx,13+lean,13+b,6,p.WH);
+      dp(ctx,14+lean,14+b,p.K);
+      dp(ctx,16+lean,14+b,p.K);
+      dp(ctx,18+lean,14+b,p.K);
+    }
+    ctx.globalAlpha=1;
+  }
+}
+
+// ── EYES ────────────────────────────────────────────────────
+function drawEyes(ctx,lv,frame,anim,p,b,lean){
+  const blink = frame>10 && (frame%120===0 || frame%120===1); // rare blink
+  const fury  = anim==='attack'&&lv>=5;
+
+  // Eye sockets
+  dr(ctx,11+lean,8+b,4,3,p.EB);
+  dr(ctx,17+lean,8+b,4,3,p.EB);
+
+  if(blink){
+    // blink — just draw thin line
+    drow(ctx,11+lean, 9+b,4,p.K);
+    drow(ctx,17+lean, 9+b,4,p.K);
+    return;
+  }
+
+  // Iris
+  dr(ctx,12+lean,8+b,3,3,p.EI);
+  dr(ctx,18+lean,8+b,3,3,p.EI);
+  // Pupil
+  dp(ctx,13+lean,9+b,p.EP);
+  dp(ctx,19+lean,9+b,p.EP);
+  // Highlight (white dot)
+  dp(ctx,12+lean,8+b,p.EH);
+  dp(ctx,18+lean,8+b,p.EH);
+
+  // ghoul eye glow (lv6+)
+  if(lv>=6){
+    setGlow(ctx,p.EI,6);
+    dp(ctx,13+lean,9+b,p.EI);
+    dp(ctx,19+lean,9+b,p.EI);
+    noGlow(ctx);
+  }
+
+  // fury brows (attack or lv7+)
+  if(fury||lv>=7){
+    // angled brows — inner corners down
+    dp(ctx,11+lean,7+b,p.K); dp(ctx,12+lean,7+b,p.K); dp(ctx,13+lean,6+b,p.K);
+    dp(ctx,19+lean,6+b,p.K); dp(ctx,20+lean,7+b,p.K); dp(ctx,21+lean,7+b,p.K);
+  } else {
+    drow(ctx,11+lean,7+b,4,p.HB); // normal brows use hair colour
+    drow(ctx,17+lean,7+b,4,p.HB);
+  }
+
+  // ghoul veins under eyes (lv8+)
+  if(lv>=8){
+    dp(ctx,11+lean,10+b,p.RD); dp(ctx,14+lean,10+b,p.RD);
+    dp(ctx,17+lean,10+b,p.RD); dp(ctx,20+lean,10+b,p.RD);
+  }
+}
+
+// ── HAIR ────────────────────────────────────────────────────
+function drawHair(ctx,lv,frame,anim,p,b,lean){
+  const hb=p.HB, hh=p.HH, hs=p.HS;
+  const hw=p.HW; // white streak
+
+  // Hair cap — covers top and sides of head
+  // Top
+  dr(ctx, 9+lean, 2+b,14,4,hb);
+  // Sides
+  dcol(ctx, 9+lean, 4+b,8,hb);
+  dcol(ctx,22+lean, 4+b,8,hb);
+  // Forehead fringe (front row)
+  drow(ctx, 9+lean, 6+b,14,hb);
+
+  // Level-based hair spikes
+  if(lv<=2){
+    // Simple round bowl cut — like image 1
+    dr(ctx,10+lean, 1+b,12,3,hb);
+    drow(ctx,10+lean,1+b,12,hh); // top shine
+    // flat fringe
+    drow(ctx,9+lean, 6+b,7,hb);
+    drow(ctx,16+lean,6+b,7,hb);
+    dp(ctx,9+lean, 5+b,hh);
+    dp(ctx,22+lean,5+b,hh);
+  } else if(lv<=5){
+    // Slightly spikier, messy
+    dr(ctx,10+lean, 0+b,12,4,hb);
+    dp(ctx, 9+lean, 2+b,hb); dp(ctx,22+lean,2+b,hb);
+    // spikes on top
+    dp(ctx,12+lean,-1+b,hb); dp(ctx,13+lean,-1+b,hb);
+    dp(ctx,15+lean,-2+b,hb); dp(ctx,16+lean,-2+b,hb);
+    dp(ctx,18+lean,-1+b,hb); dp(ctx,19+lean,-1+b,hb);
+    // highlights
+    dp(ctx,14+lean, 0+b,hh); dp(ctx,15+lean, 0+b,hh); dp(ctx,16+lean, 0+b,hh);
+    dp(ctx,13+lean, 1+b,hh); dp(ctx,17+lean, 1+b,hh);
+  } else {
+    // Wild spiky Kaneki — multiple sharp upward spikes
+    dr(ctx,10+lean,-1+b,12,5,hb);
+    // big spikes
+    dp(ctx,10+lean,-2+b,hb); dp(ctx,11+lean,-3+b,hb);
+    dp(ctx,13+lean,-3+b,hb); dp(ctx,14+lean,-4+b,hb);
+    dp(ctx,15+lean,-4+b,hb); dp(ctx,16+lean,-4+b,hb);
+    dp(ctx,17+lean,-3+b,hb); dp(ctx,18+lean,-2+b,hb);
+    dp(ctx,20+lean,-3+b,hb); dp(ctx,21+lean,-2+b,hb);
+    dp(ctx,22+lean,-1+b,hb);
+    // side hair longer
+    dcol(ctx, 9+lean,4+b,6,hb);
+    dcol(ctx,22+lean,4+b,6,hb);
+    dp(ctx, 8+lean,7+b,hb); dp(ctx, 8+lean,8+b,hb);
+    dp(ctx,23+lean,7+b,hb); dp(ctx,23+lean,8+b,hb);
+    // highlights on top
+    dp(ctx,14+lean,-3+b,hh); dp(ctx,15+lean,-3+b,hh); dp(ctx,16+lean,-2+b,hh);
+    dp(ctx,12+lean,-2+b,hh); dp(ctx,18+lean,-1+b,hh);
+    // shadow base
+    drow(ctx,10+lean,3+b,12,hs);
+  }
+
+  // Grey sheen stripe (matches bead art ref — always on hair)
+  dp(ctx,14+lean,1+b,hh); dp(ctx,15+lean,1+b,hh); dp(ctx,16+lean,1+b,hh);
+  dp(ctx,13+lean,2+b,hh); dp(ctx,17+lean,2+b,hh);
+
+  // White streak (lv4+, Kaneki post-torture signature)
+  if(lv>=4){
+    dp(ctx,11+lean,2+b,hw); dp(ctx,12+lean,1+b,hw); dp(ctx,11+lean,1+b,hw);
+    if(lv>=7){
+      // more prominent on white hair
+      dp(ctx,13+lean,0+b,hw); dp(ctx,12+lean,0+b,hw);
+    }
+  }
+
+  // Gold hairpin (lv8+)
+  if(lv>=8){
+    dp(ctx,18+lean,2+b,p.GO); dp(ctx,19+lean,2+b,p.GO);
+    dp(ctx,18+lean,3+b,p.GO);
+  }
+}
+
+// ── AURA (lv9) ──────────────────────────────────────────────
+function drawAura(ctx,lv,frame){
+  if(lv<9) return;
+  const t = frame*0.04;
+  const cx=16*S, cy=18*S;
+  // rotating red outer ring
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.rotate(t);
+  setGlow(ctx,[192,40,24],16);
+  ctx.strokeStyle='rgba(192,40,24,0.45)';
+  ctx.lineWidth=3; ctx.setLineDash([6,8]);
+  ctx.beginPath(); ctx.arc(0,0,22*S,0,Math.PI*2); ctx.stroke();
+  ctx.setLineDash([]);
+  noGlow(ctx);
+  // rotating gold inner ring (counter)
+  ctx.rotate(-t*2);
+  setGlow(ctx,[201,168,76],10);
+  ctx.strokeStyle='rgba(201,168,76,0.3)';
+  ctx.lineWidth=2; ctx.setLineDash([4,10]);
+  ctx.beginPath(); ctx.arc(0,0,17*S,0,Math.PI*2); ctx.stroke();
+  ctx.setLineDash([]);
+  noGlow(ctx);
+  ctx.restore();
+}
+
+// ── SNAP PARTICLES ──────────────────────────────────────────
+function updateSnapParticles(ctx){
+  charSnapParticles=charSnapParticles.filter(pt=>{
+    pt.x+=pt.vx; pt.y+=pt.vy; pt.vy+=0.15; pt.life--;
+    const a=pt.life/28;
+    ctx.globalAlpha=Math.min(a,0.9);
+    ctx.fillStyle=`rgb(${pt.c[0]},${pt.c[1]},${pt.c[2]})`;
+    ctx.fillRect(pt.x,pt.y,S,S);
+    ctx.globalAlpha=1;
+    return pt.life>0;
+  });
+}
+
+// ── LEVEL EVOLUTION LABEL (shown briefly on level-up) ────────
+let charLvlFlash=0;
+function flashLevelLabel(ctx,lv){
+  if(charLvlFlash<=0) return;
+  charLvlFlash--;
+  ctx.globalAlpha=Math.min(1,charLvlFlash/15);
+  ctx.font=`bold ${8}px "Share Tech Mono",monospace`;
+  ctx.fillStyle='#C0392B';
+  ctx.textAlign='center';
+  ctx.fillText(`LVL ${lv}!`, 16*S, 0);
+  ctx.textAlign='left';
+  ctx.globalAlpha=1;
+}
+
+// ── MAIN RENDER FRAME ────────────────────────────────────────
+function renderCharFrame(){
+  const cv=document.getElementById('charCanvas');
+  if(!cv) return;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,80,80);
+
+  const p=gp(charLevel);
+
+  ctx.save();
+  // flip for walk-left
+  if(charFlip){ctx.translate(80,0);ctx.scale(-1,1);}
+
+  // translate so sprite is centered (sprite origin ≈ pixel (6,2))
+  ctx.translate(6*S, 2*S);
+
+  drawAura(ctx,charLevel,charFrame);
+  drawKagune(ctx,charLevel,charFrame,charAnim,p);
+  drawBody(ctx,charLevel,charFrame,charAnim,p);
+  drawHead(ctx,charLevel,charFrame,charAnim,p);
+  updateSnapParticles(ctx);
+  flashLevelLabel(ctx,charLevel);
+
+  ctx.restore();
+}
+
+// ── ANIMATION STATE MACHINE ─────────────────────────────────
+const ANIM_SPEEDS = { idle:3, walk:2, attack:2, snap:2 };
+
+function charAnimLoop(){
+  charTick++; charSub++;
+  var spd=ANIM_SPEEDS[charAnim]||3;
+  if(charTick%spd===0) charFrame++;
+  switch(charAnim){
+    case 'idle':
+      if(charTick%240===0&&Math.random()<0.8){startWalk();}
+      else if(charTick%420===0&&Math.random()<0.6){startSnap();}
+      else if(charTick%660===0&&Math.random()<0.4){charAnim='attack';charSub=0;charFrame=0;}
+      break;
+    case 'walk':
+      charWalkTimer--;
+      if(charWalkTimer<=0){if(Math.random()<0.3)startSnap();else{charAnim='idle';charSub=0;charFlip=false;}}
+      break;
+    case 'attack': if(charSub>=24){charAnim='idle';charSub=0;} break;
+    case 'snap': if(charSub>=36){if(Math.random()<0.4)startWalk();else{charAnim='idle';charSub=0;}} break;
+  }
+  renderCharFrame();
+  charAnimRAF=requestAnimationFrame(charAnimLoop)||true;
+}
+
+function startWalk(){
+  charAnim='walk';charWalkDir=Math.random()>0.5?1:-1;charFlip=(charWalkDir<0);
+  charWalkTimer=(Math.random()<0.4?140:50)+Math.floor(Math.random()*80);charSub=0;
+}
+function startSnap(){
+  charAnim='snap';
+  charSub=0;
+  charSnapParticles=[];
+}
+function triggerAttack(){
+  charAnim='attack'; charSub=0; charFrame=0;
+  soundClick();
+}
+function triggerSnap(){
+  startSnap();
+  soundSnap();
+}
+
+// ── PUBLIC API ───────────────────────────────────────────────
+function drawCharacter(level){
+  const prev=charLevel;
+  charLevel=level;
+  if(level>prev) charLvlFlash=40;
+
+  const wrap=document.getElementById('avatarWrap');
+  if(wrap){
+    const shadows={
+      9:'0 0 24px rgba(201,168,76,0.7), 0 0 48px rgba(192,40,24,0.4)',
+      8:'0 0 20px rgba(192,40,24,0.7)',
+      7:'0 0 14px rgba(192,40,24,0.5)',
+      6:'0 0 10px rgba(192,40,24,0.35)',
+    };
+    wrap.style.boxShadow=shadows[Math.min(level,9)]||'';
+    wrap.style.borderColor=level>=9?'#C9A84C':level>=6?'#C0392B':level>=3?'rgba(192,57,43,0.6)':'var(--red2)';
+  }
+  if(!charAnimRAF) charAnimLoop();
+}
+
+
+// ============ HUD ============
+function updateHUD(){
+  const xp=getTotalXP();
+  const lv=getLevel(xp);
+  const pct=Math.min(100,((xp-lv.min)/(lv.max-lv.min))*100);
+  document.getElementById('levelBadge').textContent=`LVL ${lv.level}`;
+  document.getElementById('xpText').textContent=`${xp-lv.min} / ${lv.max-lv.min} XP`;
+  document.getElementById('xpBar').style.width=pct+'%';
+  document.getElementById('statDone').textContent=getDone();
+  document.getElementById('statXP').textContent=xp;
+  document.getElementById('statStreak').textContent=streakData.count;
+  document.getElementById('statWeek').textContent=weekTasks.length;
+  document.getElementById('playerClass').textContent=`Classe: ${lv.title}`;
+  document.getElementById('ghoulType').textContent=`// Ghoul Rank: ${lv.ghoul}`;
+  const nextLv=LEVELS.find(l=>l.level===lv.level+1);
+  if(nextLv){const need=nextLv.min-xp;document.getElementById('nextLvlHint').textContent=`// Faltam ${need} XP para LVL ${nextLv.level}`;}
+  else{document.getElementById('nextLvlHint').textContent=`// Nível máximo atingido ☩`;}
+  // ---- sidebar ----
+  const sbLv=document.getElementById('sbLevel'); if(sbLv)sbLv.textContent=`LVL ${lv.level}`;
+  const sbCl=document.getElementById('sbClass'); if(sbCl)sbCl.textContent=lv.title;
+  const sbBr=document.getElementById('sbBar'); if(sbBr)sbBr.style.width=pct+'%';
+  const sbXpL=document.getElementById('sbXpLabel'); if(sbXpL)sbXpL.textContent=`${xp-lv.min} / ${lv.max-lv.min} XP`;
+  const sbD=document.getElementById('sbDone'); if(sbD)sbD.textContent=getDone();
+  const sbS=document.getElementById('sbStreak'); if(sbS)sbS.textContent=streakData.count+'d';
+  const sbX=document.getElementById('sbXp'); if(sbX)sbX.textContent=xp;
+  PHASES.forEach(p=>{
+    const ring=document.getElementById('ring-'+p.id);
+    if(!ring)return;
+    const done=p.tasks.filter(t=>devState[t.id]).length;
+    const c=2*Math.PI*13;
+    ring.style.strokeDasharray=c;
+    ring.style.strokeDashoffset=c*(1-done/p.tasks.length);
+    const cnt=document.getElementById('ringcnt-'+p.id);
+    if(cnt)cnt.textContent=done+'/'+p.tasks.length;
+  });
+  for(let i=0;i<7;i++){const d=document.getElementById('wd'+i);if(d)d.classList.toggle('on',i<weekTasks.length);}
+  drawCharacter(lv.level);
+}
+
+// ============ TOAST & EFFECTS ============
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+function showPop(xp,x,y){
+  const el=document.createElement('div');
+  el.className='xp-pop'; el.textContent='+'+xp+' XP';
+  el.style.left=x+'px'; el.style.top=(y+window.scrollY)+'px';
+  document.body.appendChild(el); setTimeout(()=>el.remove(),1100);
+}
+function showBloodSplat(){
+  const s=document.getElementById('bloodSplat');
+  s.style.display='block'; s.style.animation='none';
+  setTimeout(()=>{s.style.animation='splatAnim 0.8s forwards';},10);
+  setTimeout(()=>{s.style.display='none';},900);
+}
+function triggerLevelUp(title){
+  showToast(`☩ LEVEL UP! ${title}`);
+  showBloodSplat();
+  const av=document.getElementById('avatarWrap');
+  if(av){av.classList.add('levelup');setTimeout(()=>av.classList.remove('levelup'),1000);}
+}
+
+// ============ UNDO SYSTEM ============
+let undoTimer=null;
+function pushUndo(action){
+  undoStack.push(action);
+  if(undoStack.length>1)undoStack.shift();
+  const bar=document.getElementById('undoBar');
+  const msg=document.getElementById('undoMsg');
+  if(bar&&msg){
+    msg.textContent=`"${action.title}" desmarcada`;
+    bar.style.display='flex';
+    clearTimeout(undoTimer);
+    undoTimer=setTimeout(()=>{bar.style.display='none';undoStack=[];},5000);
+  }
+}
+function doUndo(){
+  if(!undoStack.length)return;
+  const a=undoStack.pop();
+  if(a.type==='dev'){
+    devState[a.id]=true;
+    localStorage.setItem('darlan_dev',JSON.stringify(devState));
+    if(!weekTasks.includes(a.id)){weekTasks.push(a.id);localStorage.setItem('darlan_week',JSON.stringify(weekTasks));}
+    addHistory(a.title,a.xp,'dev');
+    renderPhases(); updateHUD(); checkBadges(); updateMissions();
+  } else if(a.type==='eng'){
+    engState[a.id]=true;
+    localStorage.setItem('darlan_eng',JSON.stringify(engState));
+    if(!weekTasks.includes('eng-'+a.id)){weekTasks.push('eng-'+a.id);localStorage.setItem('darlan_week',JSON.stringify(weekTasks));}
+    addHistory(a.title,a.xp,'eng');
+    updateHUD(); checkBadges(); renderIngles(); updateMissions();
+  }
+  document.getElementById('undoBar').style.display='none';
+  clearTimeout(undoTimer);
+}
+
+// ============ TOGGLE TASKS ============
+function toggleDevTask(tid,xp,e){
+  const prevLv=getLevel(getTotalXP()).level;
+  devState[tid]=!devState[tid];
+  localStorage.setItem('darlan_dev',JSON.stringify(devState));
+  if(devState[tid]){
+    if(!weekTasks.includes(tid)){weekTasks.push(tid);localStorage.setItem('darlan_week',JSON.stringify(weekTasks));}
+    showPop(xp,e.clientX,e.clientY);
+    updateStreak(); recordActivity();
+    const taskObj = PHASES.flatMap(p=>p.tasks).find(t=>t.id===tid);
+    if(taskObj) addHistory(taskObj.title, xp, 'dev');
+  } else {
+    weekTasks=weekTasks.filter(i=>i!==tid);
+    localStorage.setItem('darlan_week',JSON.stringify(weekTasks));
+    const taskObj = PHASES.flatMap(p=>p.tasks).find(t=>t.id===tid);
+    if(taskObj) pushUndo({type:'dev',id:tid,xp,title:taskObj.title});
+  }
+  const newLv=getLevel(getTotalXP()).level;
+  if(newLv>prevLv)triggerLevelUp(getLevel(getTotalXP()).title);
+  const el=document.getElementById('task-'+tid);
+  if(el){el.classList.toggle('done',!!devState[tid]);const chk=el.querySelector('.task-check');if(chk)chk.textContent=devState[tid]?'✓':'';}
+  updateHUD(); checkBadges(); updateMissions();
+}
+
+// ============ MISSIONS ============
+var missionPhase = localStorage.getItem('darlan_mphase')||'auto';
+
+function buildPhaseSelector(){
+  var sel=document.getElementById('missionPhaseSelect'); if(!sel)return;
+  var opts='<option value="auto">🎯 Fase atual (auto)</option>';
+  PHASES.forEach(function(p){
+    var done=p.tasks.every(function(t){return devState[t.id];});
+    opts+='<option value="'+p.id+'">'+(done?'✅ ':'')+p.name+'</option>';
+  });
+  opts+='<option value="ingles">🇺🇸 Inglês</option>';
+  sel.innerHTML=opts; sel.value=missionPhase;
+}
+function onMissionPhaseChange(){
+  var sel=document.getElementById('missionPhaseSelect');
+  missionPhase=sel.value; localStorage.setItem('darlan_mphase',missionPhase);
+  refreshMissions();
+}
+function getActivePhaseTasks(){
+  var pid=missionPhase;
+  if(pid==='auto'){
+    for(var i=0;i<PHASES.length;i++){
+      if(PHASES[i].tasks.some(function(t){return !devState[t.id];})){pid=PHASES[i].id;break;}
+    }
+    if(pid==='auto') pid='ingles';
+  }
+  if(pid==='ingles'){
+    var arr=[];
+    INGLES.forEach(function(d){d.atividades.forEach(function(a,i){var k=d.dia+'-'+i;if(!engState[k])arr.push({id:k,title:a.titulo,xp:a.xp,source:'eng'});});});
+    return arr;
+  }
+  var phase=null; for(var i=0;i<PHASES.length;i++){if(PHASES[i].id===pid){phase=PHASES[i];break;}}
+  if(!phase) return [];
+  return phase.tasks.filter(function(t){return !devState[t.id];}).map(function(t){return {id:t.id,title:t.title,xp:t.xp,source:'dev'};});
+}
+function getAllPendingTasks(){
+  var arr=[];
+  PHASES.forEach(function(p){p.tasks.forEach(function(t){if(!devState[t.id])arr.push({id:t.id,title:t.title,xp:t.xp,source:'dev'});});});
+  INGLES.forEach(function(d){d.atividades.forEach(function(a,i){var k=d.dia+'-'+i;if(!engState[k])arr.push({id:k,title:a.titulo,xp:a.xp,source:'eng'});});});
+  return arr;
+}
+function refreshMissions(){
+  buildPhaseSelector();
+  var all=getActivePhaseTasks();
+  var shuffled=all.slice().sort(function(){return Math.random()-0.5;});
+  missions=shuffled.slice(0,3).map(function(t){return Object.assign({},t,{done:false});});
+  localStorage.setItem('darlan_missions',JSON.stringify(missions));
+  localStorage.setItem('darlan_mdate',new Date().toDateString());
+  renderMissions();
+}
+function updateMissions(){
+  missions.forEach(function(m){m.done=m.source==='dev'?!!devState[m.id]:!!engState[m.id];});
+  localStorage.setItem('darlan_missions',JSON.stringify(missions));
+  renderMissions();
+}
+function renderMissions(){
+  var c=document.getElementById('missionTasks'); if(!c)return;
+  buildPhaseSelector();
+  if(!missions.length){c.innerHTML='<div style="font-size:0.75rem;color:var(--muted)">Clique em "↺ Novas missões" para gerar!</div>';return;}
+  c.innerHTML=missions.map(function(m){
+    return '<div class="mission-task'+(m.done?' done':'')+'">'
+      +'<div class="mission-dot"></div>'
+      +'<div style="flex:1;font-size:0.8rem">'+m.title+'</div>'
+      +'<div style="font-family:monospace;font-size:0.72rem;color:var(--gold)">+'+m.xp+'XP</div>'
+      +'</div>';
+  }).join('');
+  var today=new Date().toDateString();
+  if(missionDate!==today&&!missions.length){refreshMissions();}
+}
+
+// ============ BADGES ============
+function getTodayDone(){
+  const today=new Date().toISOString().split('T')[0];
+  return JSON.parse(localStorage.getItem('darlan_history')||'[]').filter(h=>h.date===today&&h.source==='dev').length;
+}
+function getTodayEngDone(){
+  const today=new Date().toISOString().split('T')[0];
+  return JSON.parse(localStorage.getItem('darlan_history')||'[]').filter(h=>h.date===today&&h.source==='eng').length;
+}
+function getDaysUsed(){
+  return new Set(JSON.parse(localStorage.getItem('darlan_history')||'[]').map(h=>h.date)).size;
+}
+function checkBadges(){
+  const xp=getTotalXP(), lv=getLevel(xp);
+  const streak=parseInt(localStorage.getItem('darlan_streak')||'0');
+  const unlocked=JSON.parse(localStorage.getItem('darlan_badges')||'[]');
+  const s={done:getDone(),level:lv.level,xp,weekCount:weekTasks.length,devState,engDone:getEngDone(),streak,todayDone:getTodayDone(),todayEngDone:getTodayEngDone(),daysUsed:getDaysUsed(),unlocked};
+  let changed=false;
+  BADGES.forEach(b=>{
+    if(!unlocked.includes(b.id)&&b.cond(s)){
+      unlocked.push(b.id); changed=true;
+      const lbl=b.secret?'🔓 SEGREDO REVELADO':'🏆 CONQUISTA';
+      setTimeout(()=>showToast(lbl+': '+b.name+'!'),500);
+    }
+  });
+  if(changed) localStorage.setItem('darlan_badges',JSON.stringify(unlocked));
+  return unlocked;
+}
+
+function renderBadges(){
+  const unlocked=JSON.parse(localStorage.getItem('darlan_badges')||'[]');
+  const c=document.getElementById('badgesGrid');
+  if(!c) return;
+  const sorted=[
+    ...BADGES.filter(b=>!b.secret&&unlocked.includes(b.id)),
+    ...BADGES.filter(b=>!b.secret&&!unlocked.includes(b.id)),
+    ...BADGES.filter(b=>b.secret&&unlocked.includes(b.id)),
+    ...BADGES.filter(b=>b.secret&&!unlocked.includes(b.id)),
+  ];
+  c.innerHTML=sorted.map(b=>{
+    const ok=unlocked.includes(b.id);
+    const hide=b.secret&&!ok;
+    return '<div class="badge-card'+(ok?' unlocked':' locked')+(b.secret?' secret-badge':'')+'">'+
+      '<span class="badge-icon">'+(hide?'🔒':b.icon)+'</span>'+
+      '<div class="badge-name">'+(hide?'???':b.name)+'</div>'+
+      '<div class="badge-desc">'+(hide?'Conquista secreta — continue jogando para revelar':b.desc)+'</div>'+
+      (ok?'<div class="badge-unlocked-label">'+(b.secret?'🔓 REVELADO':'✓ DESBLOQUEADO')+'</div>':'')+
+      '</div>';
+  }).join('');
+}
+
+// ============ HISTORY ============
+function addHistory(title, xp, source) {
+  const now = new Date();
+  taskHistory.unshift({
+    title, xp, source,
+    date: now.toISOString().split('T')[0],
+    time: now.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}),
+    dateLabel: now.toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long'})
+  });
+  if(taskHistory.length > 200) taskHistory.pop();
+  localStorage.setItem('darlan_history', JSON.stringify(taskHistory));
+}
+
+function filterHist(f, btn) {
+  histFilter = f;
+  document.querySelectorAll('.hist-filter').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderHistorico();
+}
+
+function renderHistorico() {
+  const el = document.getElementById('histBody');
+  if(!el) return;
+  const filtered = histFilter === 'all' ? taskHistory : taskHistory.filter(h=>h.source===histFilter);
+  if(!filtered.length) {
+    el.innerHTML = `<div class="hist-empty">// Nenhuma tarefa registrada ainda.<br>Complete tarefas para ver o histórico aqui! 🩸</div>`;
+    return;
+  }
+  // group by date
+  const groups = {};
+  filtered.forEach(h => {
+    if(!groups[h.date]) groups[h.date] = { label: h.dateLabel, items: [] };
+    groups[h.date].items.push(h);
+  });
+  el.innerHTML = Object.entries(groups).map(([date, g]) => `
+    <div class="hist-day-group">
+      <div class="hist-day-label">${g.label}</div>
+      ${g.items.map(h=>`
+        <div class="hist-item">
+          <span class="hist-icon">${h.source==='eng'?'🇺🇸':'💻'}</span>
+          <span class="hist-title">${h.title}</span>
+          <span class="hist-time">${h.time}</span>
+          <span class="hist-xp">+${h.xp}XP</span>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+// ============ STATS ============
+function renderStats() {
+  const xp=getTotalXP(), lv=getLevel(xp);
+  const devXP=getDevXP(), engXP=getEngXP();
+  const done=getDone(), engDone=getEngDone();
+  const daysSince = Math.max(1, Math.round((new Date()-new Date(startDate))/86400000));
+  const avgPerDay = (done+engDone) / daysSince;
+
+  // 6 stat cards
+  const g = document.getElementById('statsGrid');
+  if(g) g.innerHTML = `
+    <div class="stat-card-sm red">
+      <div class="stat-card-sm-label">// XP TOTAL</div>
+      <div class="stat-card-sm-val" style="color:var(--red3)">${xp}</div>
+      <div class="stat-card-sm-sub">Dev ${devXP} · Inglês ${engXP}</div>
+    </div>
+    <div class="stat-card-sm gold">
+      <div class="stat-card-sm-label">// NÍVEL</div>
+      <div class="stat-card-sm-val" style="color:var(--gold)">LVL ${lv.level}</div>
+      <div class="stat-card-sm-sub">${lv.title}</div>
+    </div>
+    <div class="stat-card-sm green">
+      <div class="stat-card-sm-label">// TAREFAS</div>
+      <div class="stat-card-sm-val" style="color:var(--green)">${done+engDone}</div>
+      <div class="stat-card-sm-sub">Dev ${done} · Inglês ${engDone}</div>
+    </div>
+    <div class="stat-card-sm purple">
+      <div class="stat-card-sm-label">// STREAK</div>
+      <div class="stat-card-sm-val" style="color:var(--purple2)">${streakData.count}</div>
+      <div class="stat-card-sm-sub">dias seguidos 🔥</div>
+    </div>
+    <div class="stat-card-sm blue">
+      <div class="stat-card-sm-label">// DIAS</div>
+      <div class="stat-card-sm-val" style="color:#60a5fa">${daysSince}</div>
+      <div class="stat-card-sm-sub">desde o início</div>
+    </div>
+    <div class="stat-card-sm orange">
+      <div class="stat-card-sm-label">// RITMO</div>
+      <div class="stat-card-sm-val" style="color:#fb923c">${avgPerDay.toFixed(1)}</div>
+      <div class="stat-card-sm-sub">tarefas/dia</div>
+    </div>
+  `;
+
+  // week comparison
+  const cr = document.getElementById('compareRow');
+  if(cr) {
+    const now = new Date();
+    let thisWeek=0, lastWeek=0;
+    for(let i=0;i<7;i++){
+      const d=new Date(now); d.setDate(d.getDate()-i);
+      const k=d.toISOString().split('T')[0];
+      thisWeek += dailyActivity[k]||0;
+    }
+    for(let i=7;i<14;i++){
+      const d=new Date(now); d.setDate(d.getDate()-i);
+      const k=d.toISOString().split('T')[0];
+      lastWeek += dailyActivity[k]||0;
+    }
+    const diff = thisWeek - lastWeek;
+    const arrow = diff > 0 ? `<span style="color:var(--green)">▲ +${diff}</span>` : diff < 0 ? `<span style="color:var(--red3)">▼ ${diff}</span>` : `<span style="color:var(--muted)">— igual</span>`;
+    cr.innerHTML = `
+      <span style="color:var(--text)">Esta semana: <strong style="color:var(--red3)">${thisWeek}</strong></span>
+      <span style="color:var(--muted)">|</span>
+      <span style="color:var(--text)">Semana passada: <strong style="color:var(--muted)">${lastWeek}</strong></span>
+      <span style="color:var(--muted)">|</span>
+      ${arrow}
+    `;
+  }
+
+  // radar chart — 6 axes: HTML, CSS, JS, Ferramentas, React, Backend
+  const radarAxes = [
+    { label:'HTML',        pct: phaseProgress('p2') },
+    { label:'CSS',         pct: phaseProgress('p2') },
+    { label:'JavaScript',  pct: phaseProgress('p3') },
+    { label:'Ferramentas', pct: phaseProgress('p4') },
+    { label:'React',       pct: phaseProgress('p6') },
+    { label:'Backend',     pct: phaseProgress('p7') },
+  ];
+  drawRadar(radarAxes);
+
+  // phases bars
+  const pb = document.getElementById('phasesBars');
+  if(pb) pb.innerHTML = PHASES.map(p=>{
+    const d=p.tasks.filter(t=>devState[t.id]).length;
+    const pct=Math.round(d/p.tasks.length*100);
+    return `<div style="margin-bottom:0.65rem;">
+      <div style="display:flex;justify-content:space-between;font-size:0.74rem;margin-bottom:0.22rem;">
+        <span>${p.icon} ${p.name}</span>
+        <span style="color:var(--muted);font-family:'Share Tech Mono',monospace">${d}/${p.tasks.length} · ${pct}%</span>
+      </div>
+      <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${pct}%;background:${p.color}"></div></div>
+    </div>`;
+  }).join('');
+
+  // activity chart
+  const wc = document.getElementById('weekChart');
+  if(wc) {
+    const days=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const now=new Date(), vals=[];
+    for(let i=6;i>=0;i--){
+      const d=new Date(now); d.setDate(d.getDate()-i);
+      vals.push({label:days[d.getDay()], v:dailyActivity[d.toISOString().split('T')[0]]||0, isToday:i===0});
+    }
+    const max=Math.max(...vals.map(v=>v.v),1);
+    wc.innerHTML = vals.map(v=>`
+      <div class="week-bar-wrap">
+        <div class="week-bar-outer">
+          <div class="week-bar-inner" style="height:${Math.round(v.v/max*100)}%;background:${v.isToday?'linear-gradient(180deg,var(--gold),#c9a84c)':'linear-gradient(180deg,var(--red3),var(--red))'}"></div>
+        </div>
+        <div class="week-bar-label" style="${v.isToday?'color:var(--gold)':''}">${v.label}</div>
+        <div style="font-size:0.52rem;color:var(--muted);font-family:'Share Tech Mono',monospace">${v.v||''}</div>
+      </div>
+    `).join('');
+  }
+}
+
+function phaseProgress(pid) {
+  const p = PHASES.find(p=>p.id===pid);
+  if(!p) return 0;
+  return p.tasks.filter(t=>devState[t.id]).length / p.tasks.length;
+}
+
+function drawRadar(axes) {
+  const svg = document.getElementById('radarChart');
+  if(!svg) return;
+  const cx=130, cy=130, r=95, n=axes.length;
+  let html = '';
+  // grid rings
+  [0.25,0.5,0.75,1].forEach(ring=>{
+    let pts=axes.map((_,i)=>{
+      const ang=-Math.PI/2+(2*Math.PI/n)*i;
+      return `${cx+Math.cos(ang)*r*ring},${cy+Math.sin(ang)*r*ring}`;
+    }).join(' ');
+    html+=`<polygon points="${pts}" fill="none" stroke="#1e1a2a" stroke-width="1"/>`;
+  });
+  // axis lines
+  axes.forEach((_,i)=>{
+    const ang=-Math.PI/2+(2*Math.PI/n)*i;
+    html+=`<line x1="${cx}" y1="${cy}" x2="${cx+Math.cos(ang)*r}" y2="${cy+Math.sin(ang)*r}" stroke="#1e1a2a" stroke-width="1"/>`;
+  });
+  // data polygon
+  const pts=axes.map((a,i)=>{
+    const ang=-Math.PI/2+(2*Math.PI/n)*i;
+    const val=Math.max(0.04,a.pct);
+    return `${cx+Math.cos(ang)*r*val},${cy+Math.sin(ang)*r*val}`;
+  }).join(' ');
+  html+=`<polygon points="${pts}" fill="rgba(192,57,43,0.18)" stroke="#c0392b" stroke-width="2"/>`;
+  // dots on data
+  axes.forEach((a,i)=>{
+    const ang=-Math.PI/2+(2*Math.PI/n)*i;
+    const val=Math.max(0.04,a.pct);
+    html+=`<circle cx="${cx+Math.cos(ang)*r*val}" cy="${cy+Math.sin(ang)*r*val}" r="4" fill="#c0392b"/>`;
+  });
+  // labels
+  axes.forEach((a,i)=>{
+    const ang=-Math.PI/2+(2*Math.PI/n)*i;
+    const lx=cx+Math.cos(ang)*(r+18), ly=cy+Math.sin(ang)*(r+18);
+    const anchor=lx<cx-5?'end':lx>cx+5?'start':'middle';
+    html+=`<text x="${lx}" y="${ly+4}" fill="#5a4f6a" font-size="10" font-family="Share Tech Mono,monospace" text-anchor="${anchor}">${a.label}</text>`;
+    // pct label
+    const pctStr=Math.round(a.pct*100)+'%';
+    const px=cx+Math.cos(ang)*r*Math.max(0.04,a.pct);
+    const py=cy+Math.sin(ang)*r*Math.max(0.04,a.pct)-8;
+    if(a.pct>0.05) html+=`<text x="${px}" y="${py}" fill="#c0392b" font-size="9" font-family="Share Tech Mono,monospace" text-anchor="middle">${pctStr}</text>`;
+  });
+  svg.innerHTML=html;
+}
+
+// ============ PHASES ============
+function renderPhases(){
+  const cont=document.getElementById('phases');
+  cont.innerHTML='';
+  PHASES.forEach(p=>{
+    const done=p.tasks.filter(t=>devState[t.id]).length;
+    const total=p.tasks.length;
+    const isComplete=done===total;
+    const c=2*Math.PI*13;
+    const el=document.createElement('div');
+    el.className=`phase${isComplete?' completed':''}${p.internship?' internship-ready':''}`;
+    el.innerHTML=`
+      <div class="phase-header" onclick="this.closest('.phase').classList.toggle('open')">
+        <div class="phase-icon">${p.icon}</div>
+        <div class="phase-meta">
+          <div class="phase-name" style="color:${p.color}">${p.name}</div>
+          <div class="phase-desc">${p.desc}</div>
+          ${p.arc?`<div style="font-size:0.67rem;color:rgba(192,57,43,0.6);font-style:italic;margin-top:0.15rem;">${p.arc}</div>`:''}
+        </div>
+        <div class="phase-right">
+          <span class="phase-xp">+${p.xp}XP</span>
+          <div class="ring-wrap">
+            <svg width="34" height="34" viewBox="0 0 34 34">
+              <circle cx="17" cy="17" r="13" fill="none" stroke="#1e1a2a" stroke-width="3"/>
+              <circle id="ring-${p.id}" cx="17" cy="17" r="13" fill="none" stroke="${p.color}" stroke-width="3" stroke-linecap="round"
+                style="stroke-dasharray:${c};stroke-dashoffset:${c*(1-done/total)};transition:stroke-dashoffset 0.6s ease;"/>
+            </svg>
+            <div class="ring-count" id="ringcnt-${p.id}" style="color:${p.color}">${done}/${total}</div>
+          </div>
+          <span class="chevron">▼</span>
+        </div>
+      </div>
+      <div class="phase-body">
+        ${p.internship?`<div class="internship-banner">⭐ A PARTIR DAQUI VOCÊ PODE SE CANDIDATAR A ESTÁGIO! Suba projetos no GitHub e mande ver! ⭐</div>`:''}
+        <div class="tasks">
+          ${p.tasks.map(t=>`
+            <div class="task${devState[t.id]?' done':''}" id="task-${t.id}">
+              <div class="task-check" onclick="toggleDevTask('${t.id}',${t.xp},event)">${devState[t.id]?'✓':''}</div>
+              <div class="task-content" onclick="openPomo('${t.title}')">
+                <div class="task-title">${t.title}</div>
+                <div class="task-desc">${t.desc} <span style="color:rgba(192,57,43,0.4);font-size:0.62rem;">· clique para pomodoro</span></div>
+                ${t.links&&t.links.length?`<div style="display:flex;flex-wrap:wrap;gap:0.28rem;margin-top:0.35rem;">${t.links.map(lk=>`<a href="${lk.u}" target="_blank" onclick="event.stopPropagation()" style="font-size:0.62rem;color:var(--red3);background:var(--red-faint);border:1px solid rgba(192,57,43,0.25);padding:0.08rem 0.38rem;border-radius:4px;text-decoration:none;">${lk.l}</a>`).join('')}</div>`:''}
+              </div>
+              ${t.ext?`<div class="ext-badge">⭐ grátis</div>`:''}
+              <div class="task-xp">+${t.xp}XP</div>
+            </div>
+          `).join('')}
+        </div>
+        ${p.checkpoint?`<div class="checkpoint-banner">🏁 ${p.checkpoint}</div>`:''}
+        <textarea class="phase-notes" placeholder="// Anotações, dúvidas, links úteis..." 
+          onchange="saveNote('${p.id}',this.value)">${phaseNotes[p.id]||''}</textarea>
+      </div>
+    `;
+    cont.appendChild(el);
+  });
+}
+function saveNote(pid,val){phaseNotes[pid]=val;localStorage.setItem('darlan_notes',JSON.stringify(phaseNotes));}
+
+// ============ CRONOGRAMA ============
+let currentDay='Segunda';
+let treinoFase = parseInt(localStorage.getItem('darlan_treino_fase')||'1');
+let cargaData = JSON.parse(localStorage.getItem('darlan_carga')||'{}');
+let undoStack = [];
+const DAYS=['Segunda','Terça','Quarta','Quinta','Sexta'];
+
+function toggleFase(){
+  treinoFase = treinoFase===1?2:1;
+  localStorage.setItem('darlan_treino_fase', treinoFase);
+  renderCronograma();
+}
+function saveCarga(key,val){
+  cargaData[key]=val;
+  localStorage.setItem('darlan_carga',JSON.stringify(cargaData));
+}
+
+function renderCronograma(){
+  const tabs=document.getElementById('dayTabs');
+  tabs.innerHTML=DAYS.map(d=>`<button class="day-btn${d===currentDay?' active':''}" onclick="selectDay('${d}')">${d}</button>`).join('');
+  const body=document.getElementById('scheduleBody');
+  const faseKey = treinoFase===1?'f1':'f2';
+  body.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.9rem;flex-wrap:wrap;gap:0.5rem;">
+    <div style="font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--muted)">// ${currentDay.toUpperCase()}-FEIRA</div>
+    <button onclick="toggleFase()" style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;padding:0.3rem 0.75rem;border-radius:20px;border:1px solid rgba(${treinoFase===2?'201,168,76':'192,57,43'},0.5);background:rgba(${treinoFase===2?'201,168,76':'192,57,43'},0.1);color:${treinoFase===2?'var(--gold)':'var(--red3)'};cursor:pointer;">
+      ${treinoFase===1?'Fase 1 — Readaptação':'Fase 2 — Heavy'} ⇄
+    </button>
+  </div>`
+  +SCHEDULE[currentDay].map(b=>{
+    const cor=BLOCK_COLORS[b.tipo];
+    let extra='';
+    if(b.treino && TREINO[b.treino]){
+      const td=TREINO[b.treino];
+      const t=td[faseKey]||td['f1'];
+      const absBlock = t.abs ? `
+        <div style="margin-top:0.6rem;padding:0.55rem 0.65rem;background:rgba(0,0,0,0.2);border-radius:7px;border:1px solid rgba(192,57,43,0.15);">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:0.62rem;color:rgba(192,57,43,0.7);margin-bottom:0.4rem;">${t.abs.titulo}</div>
+          ${t.abs.exercicios.map(a=>`
+            <div style="display:flex;justify-content:space-between;font-size:0.72rem;padding:0.15rem 0;">
+              <span style="color:var(--muted)">${a.n}</span>
+              <span style="color:var(--gold);font-family:'Share Tech Mono',monospace;font-size:0.62rem">${a.s}</span>
+            </div>${a.obs?`<div style="font-size:0.6rem;color:rgba(90,79,106,0.8);margin-bottom:0.1rem">${a.obs}</div>`:''}`).join('')}
+        </div>` : '';
+      extra=`<div style="margin-top:0.65rem;border-top:1px solid rgba(192,57,43,0.2);padding-top:0.6rem;">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:#c0392b;margin-bottom:0.5rem;">${t.nome}</div>
+        <div style="display:flex;flex-direction:column;gap:0.3rem;">
+          ${t.exercicios.map((e,i)=>{
+            const ck=b.treino+'-'+faseKey+'-'+i;
+            const saved=cargaData[ck]||'';
+            return `<div style="background:rgba(0,0,0,0.15);border-radius:6px;padding:0.3rem 0.5rem;">
+              <div style="display:flex;align-items:center;gap:0.45rem;">
+                <span style="color:rgba(192,57,43,0.5);font-family:'Share Tech Mono',monospace;font-size:0.58rem;flex-shrink:0;">${i+1}.</span>
+                <span style="color:var(--text);flex:1;font-size:0.74rem;">${e.n}</span>
+                <span style="color:var(--gold);font-family:'Share Tech Mono',monospace;font-size:0.64rem;flex-shrink:0;">${e.s}</span>
+              </div>
+              ${e.obs?`<div style="font-size:0.62rem;color:var(--muted);padding-left:1rem;margin-top:0.08rem;">${e.obs}</div>`:''}
+              <div style="display:flex;align-items:center;gap:0.3rem;margin-top:0.22rem;padding-left:1rem;">
+                <span style="font-size:0.6rem;color:rgba(90,79,106,0.8);">🏋️ carga:</span>
+                <input type="text" placeholder="ex: 60kg" value="${saved}"
+                  onchange="saveCarga('${ck}',this.value)"
+                  style="width:80px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:0.62rem;padding:0.12rem 0.35rem;border-radius:4px;outline:none;">
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+        ${absBlock}
+      </div>`;
+    }
+    return `<div class="block-item" style="background:${cor.bg};border-left-color:${cor.border}">
+      <span style="font-size:1rem">${b.emoji}</span>
+      <div style="flex:1">
+        <div class="block-label" style="color:${cor.text}">${b.label}</div>
+        <div class="block-time">${b.hora} – ${b.fim}</div>
+        ${extra}
+      </div>
+      <span class="block-dur" style="background:${cor.border};align-self:flex-start">${durLabel(b.hora,b.fim)}</span>
+    </div>`;
+  }).join('');
+}
+function selectDay(d){currentDay=d;renderCronograma();}
+function toMin(t){const[h,m]=t.split(':').map(Number);return h*60+m;}
+function durLabel(a,b){const d=toMin(b)-toMin(a),h=Math.floor(d/60),m=d%60;return h>0?`${h}h${m>0?m+'min':''}`:m+'min';}
+
+// ============ INGLÊS ============
+let currentEngDay='Segunda';
+function getTotalEng(){let done=0,total=0;INGLES.forEach(d=>d.atividades.forEach((_,i)=>{const k=d.dia+'-'+i;total++;if(engState[k])done++;}));return{done,total};}
+function renderIngles(){
+  const tabs=document.getElementById('engDayTabs');
+  tabs.innerHTML=INGLES.map(d=>{
+    const done=d.atividades.filter((_,i)=>engState[d.dia+'-'+i]).length;
+    return `<button class="day-btn${d.dia===currentEngDay?' active':''}" onclick="selectEngDay('${d.dia}')">${d.dia}<br><span style="font-family:'Share Tech Mono',monospace;font-size:0.62rem;color:${d.dia===currentEngDay?d.cor:'var(--muted)'}">${done}/${d.atividades.length}</span></button>`;
+  }).join('');
+  const dia=INGLES.find(d=>d.dia===currentEngDay);
+  const body=document.getElementById('engBody');
+  const rgb=hexToRgb(dia.cor);
+  body.innerHTML=`
+    <div class="eng-day-header" style="border-color:rgba(${rgb},0.3);background:rgba(${rgb},0.06)">
+      <span style="font-size:1.4rem">${dia.emoji}</span>
+      <div><div style="font-weight:700;font-size:0.92rem;color:${dia.cor}">${dia.dia}-feira — ${dia.foco}</div></div>
+    </div>
+    <div class="eng-tasks">
+      ${dia.atividades.map((a,i)=>{
+        const k=dia.dia+'-'+i; const feito=!!engState[k];
+        return `<div class="eng-task${feito?' done':''}" id="engt-${k}">
+          <div class="task-check" onclick="toggleEng('${k}',event)" style="${feito?'background:var(--green);border-color:var(--green);color:#030206':''}">${feito?'✓':''}</div>
+          <div style="flex:1" onclick="toggleEngExpand('${k}')">
+            <div class="eng-title">${a.titulo}</div>
+            <div class="eng-expand" id="engexp-${k}">
+              <div class="eng-detail">${a.detalhe}</div>
+              <div class="eng-tip">${a.dica}</div>
+            </div>
+          </div>
+          <div class="eng-time">${a.tempo}</div>
+          <div style="font-family:'Press Start 2P',monospace;font-size:0.38rem;color:var(--gold);flex-shrink:0;margin-top:3px">+${a.xp}XP</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+  const{done,total}=getTotalEng();
+  const pct=total>0?Math.round(done/total*100):0;
+  document.getElementById('engPct').textContent=pct+'%';
+  document.getElementById('engProgFill').style.width=pct+'%';
+  document.getElementById('engPctLabel').textContent=done+' / '+total+' atividades';
+}
+function toggleEng(k,e){
+  e.stopPropagation();
+  const prevLv=getLevel(getTotalXP()).level;
+  let xpVal=15;
+  INGLES.forEach(d=>d.atividades.forEach((a,i)=>{if(d.dia+'-'+i===k)xpVal=a.xp;}));
+  engState[k]=!engState[k];
+  localStorage.setItem('darlan_eng',JSON.stringify(engState));
+  if(engState[k]){
+    showPop(xpVal,e.clientX,e.clientY);
+    if(!weekTasks.includes('eng-'+k)){weekTasks.push('eng-'+k);localStorage.setItem('darlan_week',JSON.stringify(weekTasks));}
+    updateStreak(); recordActivity();
+    // log to history
+    INGLES.forEach(d=>d.atividades.forEach((a,i)=>{if(d.dia+'-'+i===k) addHistory(a.titulo, xpVal, 'eng');}));
+  } else {
+    weekTasks=weekTasks.filter(i=>i!=='eng-'+k);
+    localStorage.setItem('darlan_week',JSON.stringify(weekTasks));
+    let engTitle='';let engXpVal=xpVal;
+    INGLES.forEach(d=>d.atividades.forEach((a,i)=>{if(d.dia+'-'+i===k){engTitle=a.titulo;engXpVal=a.xp;}}));
+    if(engTitle) pushUndo({type:'eng',id:k,xp:engXpVal,title:engTitle});
+  }
+  const newLv=getLevel(getTotalXP()).level;
+  if(newLv>prevLv)triggerLevelUp(getLevel(getTotalXP()).title);
+  updateHUD(); checkBadges(); renderIngles(); updateMissions();
+}
+function toggleEngExpand(k){const el=document.getElementById('engt-'+k);if(el)el.classList.toggle('expanded');}
+function selectEngDay(d){currentEngDay=d;renderIngles();}
+function hexToRgb(hex){const r=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);return r?`${parseInt(r[1],16)},${parseInt(r[2],16)},${parseInt(r[3],16)}`:'255,255,255';}
+
+// ============ POMODORO ============
+let pomoInterval=null, pomoSeconds=25*60, pomoRunning=false, pomoSessions=0, pomoPaused=false;
+function openPomo(taskName){
+  document.getElementById('pomoTaskName').textContent=taskName;
+  document.getElementById('pomodoroModal').classList.add('open');
+  resetPomo();
+}
+function closePomo(){document.getElementById('pomodoroModal').classList.remove('open');clearInterval(pomoInterval);pomoRunning=false;}
+function togglePomo(){
+  if(pomoRunning){clearInterval(pomoInterval);pomoRunning=false;document.getElementById('pomoStartBtn').textContent='▶ CONTINUAR';}
+  else{pomoRunning=true;document.getElementById('pomoStartBtn').textContent='⏸ PAUSAR';pomoInterval=setInterval(tickPomo,1000);}
+}
+function tickPomo(){
+  pomoSeconds--;
+  updatePomoDisplay();
+  if(pomoSeconds<=0){clearInterval(pomoInterval);pomoRunning=false;pomoSessions++;document.getElementById('pomoSessionLabel').textContent=`Sessão ${pomoSessions+1} de 4`;showToast('🍅 POMODORO COMPLETO! +bônus XP');pomoSeconds=pomoSessions%4===0?15*60:5*60;document.getElementById('pomoStartBtn').textContent='▶ INICIAR';}
+}
+function resetPomo(){pomoSeconds=25*60;clearInterval(pomoInterval);pomoRunning=false;document.getElementById('pomoStartBtn').textContent='▶ INICIAR';updatePomoDisplay();}
+function updatePomoDisplay(){
+  const m=Math.floor(pomoSeconds/60),s=pomoSeconds%60;
+  document.getElementById('pomoTime').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  const total=25*60, pct=1-(pomoSeconds/total);
+  const circ=2*Math.PI*52;
+  document.getElementById('pomoRing').style.strokeDashoffset=circ*pct;
+}
+
+// ============ SOUND ENGINE (Web Audio API — zero arquivos externos) ============
+let soundEnabled = false;
+let audioCtx = null;
+function getAudio(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+function toggleSound(){
+  soundEnabled = !soundEnabled;
+  document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
+}
+function playTone(freq, type, duration, vol=0.18, delay=0){
+  if(!soundEnabled) return;
+  try {
+    const ctx = getAudio();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(0, ctx.currentTime+delay);
+    g.gain.linearRampToValueAtTime(vol, ctx.currentTime+delay+0.01);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+delay+duration);
+    o.start(ctx.currentTime+delay);
+    o.stop(ctx.currentTime+delay+duration+0.05);
+  } catch(e){}
+}
+function soundTaskDone(){
+  playTone(440,'sine',0.08,0.15);
+  playTone(554,'sine',0.08,0.15,0.08);
+  playTone(660,'sine',0.12,0.15,0.16);
+}
+function soundLevelUp(){
+  [261,329,392,523,659,784].forEach((f,i)=>playTone(f,'square',0.18,0.12,i*0.09));
+}
+function soundBadge(){
+  playTone(880,'triangle',0.15,0.18);
+  playTone(1100,'triangle',0.15,0.18,0.15);
+}
+function soundClick(){
+  playTone(300,'sine',0.04,0.08);
+}
+function soundSnap(){
+  if(!soundEnabled) return;
+  try{
+    var ctx=getAudio(); var now=ctx.currentTime; var sr=ctx.sampleRate;
+    // transiente seco
+    var b1=ctx.createBuffer(1,Math.floor(sr*0.008),sr);
+    var d1=b1.getChannelData(0);
+    for(var i=0;i<d1.length;i++) d1[i]=(Math.random()*2-1)*Math.exp(-i/(d1.length*0.2));
+    var s1=ctx.createBufferSource(); s1.buffer=b1;
+    var f1=ctx.createBiquadFilter(); f1.type='bandpass'; f1.frequency.value=3000; f1.Q.value=1;
+    var g1=ctx.createGain(); g1.gain.setValueAtTime(1.2,now); g1.gain.exponentialRampToValueAtTime(0.001,now+0.008);
+    s1.connect(f1); f1.connect(g1); g1.connect(ctx.destination);
+    s1.start(now); s1.stop(now+0.01);
+    // eco reverb manual (delay)
+    var delay=ctx.createDelay(); delay.delayTime.value=0.04;
+    var dg=ctx.createGain(); dg.gain.value=0.25;
+    g1.connect(delay); delay.connect(dg); dg.connect(ctx.destination);
+    // ressonância
+    var osc=ctx.createOscillator(); osc.type='sine';
+    osc.frequency.setValueAtTime(800,now+0.002);
+    osc.frequency.exponentialRampToValueAtTime(350,now+0.1);
+    var og=ctx.createGain(); og.gain.setValueAtTime(0.07,now+0.002); og.gain.exponentialRampToValueAtTime(0.001,now+0.1);
+    osc.connect(og); og.connect(ctx.destination);
+    osc.start(now+0.002); osc.stop(now+0.11);
+  }catch(e){}
+}
+
+// ============ SHARE CARD (Canvas API) ============
+function generateCard(){
+  const canvas = document.getElementById('shareCanvas');
+  const ctx = canvas.getContext('2d');
+  const W=600, H=340;
+  canvas.width=W; canvas.height=H;
+
+  const xp=getTotalXP(), lv=getLevel(xp), done=getDone()+getEngDone();
+  const totalTasks=PHASES.reduce((s,p)=>s+p.tasks.length,0);
+  const pctDone=Math.round(done/totalTasks*100);
+  const p6=PHASES.find(p=>p.id==='p6');
+  const p6done=p6.tasks.filter(t=>devState[t.id]).length;
+
+  // Background gradient
+  const bg=ctx.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0,'#030206'); bg.addColorStop(1,'#0d0812');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  // Red accent bar top
+  ctx.fillStyle='#c0392b'; ctx.fillRect(0,0,W,4);
+
+  // Subtle kagune glow
+  const grd=ctx.createRadialGradient(W,H,10,W,H,350);
+  grd.addColorStop(0,'rgba(139,0,0,0.25)'); grd.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grd; ctx.fillRect(0,0,W,H);
+
+  // Tokyo Ghoul cross symbol top-right
+  ctx.fillStyle='rgba(192,57,43,0.12)';
+  ctx.font='bold 90px serif'; ctx.textAlign='right';
+  ctx.fillText('☩',W-20,100);
+
+  // Title
+  ctx.fillStyle='#e74c3c';
+  ctx.font='bold 11px "Courier New"'; ctx.textAlign='left';
+  ctx.fillText('TOKYO GHOUL DEV JOURNEY', 30, 38);
+
+  // Name
+  ctx.fillStyle='#e8ddd5';
+  ctx.font='bold 36px "Courier New"'; ctx.textAlign='left';
+  ctx.fillText('DARLAN', 30, 90);
+
+  // Level badge box
+  ctx.fillStyle='rgba(192,57,43,0.18)';
+  roundRect(ctx,30,105,120,36,6); ctx.fill();
+  ctx.strokeStyle='rgba(192,57,43,0.5)'; ctx.lineWidth=1; roundRect(ctx,30,105,120,36,6); ctx.stroke();
+  ctx.fillStyle='#c0392b'; ctx.font='bold 14px "Courier New"';
+  ctx.fillText(`LVL ${lv.level}`, 45, 129);
+
+  // Class
+  ctx.fillStyle='#c9a84c'; ctx.font='12px "Courier New"';
+  ctx.fillText(lv.title, 160, 128);
+
+  // Ghoul rank
+  ctx.fillStyle='rgba(201,168,76,0.6)'; ctx.font='10px "Courier New"';
+  ctx.fillText(lv.ghoul, 30, 158);
+
+  // Divider
+  ctx.strokeStyle='rgba(192,57,43,0.3)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(30,170); ctx.lineTo(W-30,170); ctx.stroke();
+
+  // Stats row
+  const stats=[
+    {label:'XP TOTAL', val:xp, color:'#e74c3c'},
+    {label:'TAREFAS', val:done, color:'#2ecc71'},
+    {label:'STREAK', val:streakData.count+'d', color:'#9b59b6'},
+    {label:'PROGRESSO', val:pctDone+'%', color:'#c9a84c'},
+  ];
+  stats.forEach((s,i)=>{
+    const x=30+i*140;
+    ctx.fillStyle='rgba(255,255,255,0.04)';
+    roundRect(ctx,x,182,128,56,6); ctx.fill();
+    ctx.fillStyle=s.color; ctx.font='bold 20px "Courier New"'; ctx.textAlign='left';
+    ctx.fillText(s.val,x+10,210);
+    ctx.fillStyle='rgba(200,200,200,0.4)'; ctx.font='9px "Courier New"';
+    ctx.fillText(s.label,x+10,225);
+  });
+
+  // XP progress bar
+  const barX=30, barY=255, barW=W-60, barH=10;
+  const xpLvl=lv, pctXp=(xp-xpLvl.min)/(xpLvl.max-xpLvl.min);
+  ctx.fillStyle='rgba(255,255,255,0.06)';
+  roundRect(ctx,barX,barY,barW,barH,5); ctx.fill();
+  const grad=ctx.createLinearGradient(barX,0,barX+barW,0);
+  grad.addColorStop(0,'#8b0000'); grad.addColorStop(1,'#e74c3c');
+  ctx.fillStyle=grad;
+  roundRect(ctx,barX,barY,Math.max(8,barW*Math.min(pctXp,1)),barH,5); ctx.fill();
+  ctx.fillStyle='rgba(200,200,200,0.3)'; ctx.font='9px "Courier New"'; ctx.textAlign='right';
+  ctx.fillText(`${xp} / ${xpLvl.max} XP`, W-30, barY-3);
+
+  // Estágio progress
+  const stagePct=Math.round(p6done/p6.tasks.length*100);
+  ctx.fillStyle='rgba(201,168,76,0.7)'; ctx.font='10px "Courier New"'; ctx.textAlign='left';
+  ctx.fillText(`⭐ Estágio: ${stagePct}% da Fase React concluída`, 30, 290);
+
+  // Footer
+  ctx.fillStyle='rgba(90,79,106,0.6)'; ctx.font='9px "Courier New"'; ctx.textAlign='center';
+  ctx.fillText('github.com/darlan  ·  darlan-journey.html  ·  '+new Date().toLocaleDateString('pt-BR'), W/2, H-14);
+
+  document.getElementById('cardPreviewWrap').style.display='block';
+  soundBadge();
+}
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);ctx.lineTo(x+r,y+h);
+  ctx.arcTo(x,y+h,x,y+h-r,r);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();
+}
+
+// ============ INTERNSHIP ESTIMATE ============
+function renderEstimate(){
+  const el=document.getElementById('estimateBody'); if(!el)return;
+  const p6=PHASES.find(p=>p.id==='p7');
+  const totalNeeded=PHASES.slice(0,6).reduce((s,p)=>s+p.tasks.length,0);
+  const doneNeeded=PHASES.slice(0,6).reduce((s,p)=>s+p.tasks.filter(t=>devState[t.id]).length,0);
+  const remaining=totalNeeded-doneNeeded;
+  const daysSince=Math.max(1,Math.round((new Date()-new Date(startDate))/86400000));
+  const done=getDone();
+  const ratePerDay=done/daysSince||0.3;
+  const daysLeft=ratePerDay>0?Math.ceil(remaining/ratePerDay):null;
+  const estDate=daysLeft!=null?new Date(Date.now()+daysLeft*86400000):null;
+  const estStr=estDate?estDate.toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'}):'—';
+
+  const p6pct=Math.round(p6.tasks.filter(t=>devState[t.id]).length/p6.tasks.length*100);
+  el.innerHTML=`
+    <div style="display:grid;gap:0.55rem;">
+      <div style="display:flex;justify-content:space-between;padding:0.6rem 0.8rem;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
+        <span style="color:var(--muted)">Tarefas até o estágio</span>
+        <span style="color:var(--text);font-family:'Share Tech Mono',monospace">${doneNeeded} / ${totalNeeded}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:0.6rem 0.8rem;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
+        <span style="color:var(--muted)">Ritmo atual</span>
+        <span style="color:var(--green);font-family:'Share Tech Mono',monospace">${ratePerDay.toFixed(1)} tarefas/dia</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:0.6rem 0.8rem;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
+        <span style="color:var(--muted)">Dias restantes estimados</span>
+        <span style="color:var(--gold);font-family:'Share Tech Mono',monospace">${daysLeft!=null?daysLeft+' dias':'—'}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:0.6rem 0.8rem;background:rgba(201,168,76,0.07);border-radius:8px;border:1px solid rgba(201,168,76,0.25);">
+        <span style="color:var(--gold)">⭐ Data estimada do estágio</span>
+        <span style="color:var(--gold2);font-weight:700;font-family:'Share Tech Mono',monospace">${estStr}</span>
+      </div>
+      <div style="font-size:0.7rem;color:var(--muted);padding:0.3rem 0.2rem;line-height:1.6;">
+        📌 Baseado no seu ritmo desde ${new Date(startDate).toLocaleDateString('pt-BR')}. 
+        ${daysLeft&&daysLeft<60?'🔥 Continue assim!':`💡 Acelere um pouco e chega mais cedo!`}
+        <br>React (Fase 6): ${p6pct}% concluída.
+      </div>
+    </div>
+  `;
+}
+
+// ============ HOOK SONS NAS FUNÇÕES EXISTENTES ============
+const _origToggleDev = toggleDevTask;
+// Patch showToast to play sound on level up detection is already in triggerLevelUp
+// We'll patch the XP pop instead
+const _origShowPop = showPop;
+window.showPop = function(xp,x,y){ soundTaskDone(); _origShowPop(xp,x,y); };
+const _origTriggerLevelUp = triggerLevelUp;
+window.triggerLevelUp = function(title){ soundLevelUp(); _origTriggerLevelUp(title); };
+
+// ============ TABS ============
+function switchTab(id,btn,sbId){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.sb-nav-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  // also activate sidebar button
+  const sbBtn = document.getElementById(sbId||'sbn-'+id);
+  if(sbBtn) sbBtn.classList.add('active');
+  soundClick();
+  if(id==='stats')renderStats();
+  if(id==='conquistas')renderBadges();
+  if(id==='historico')renderHistorico();
+  if(id==='card'){renderEstimate();}
+}
+
+// ============ SERVICE WORKER (offline) ============
+if('serviceWorker' in navigator){
+  const swCode=`
+const CACHE='darlan-v1';
+const ASSETS=['${location.pathname}'];
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));
+self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(CACHE).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request)))));
+  `.trim();
+  const blob=new Blob([swCode],{type:'application/javascript'});
+  const url=URL.createObjectURL(blob);
+  navigator.serviceWorker.register(url).catch(()=>{});
+}
+
+// ============ INIT ============
+renderPhases();
+updateHUD();
+renderCronograma();
+renderIngles();
+checkBadges();
+renderMissions();
+updateMissions();
+
+// show mobile nav on small screens
+if(window.innerWidth <= 860){
+  const mn = document.getElementById('mobileNav');
+  if(mn) mn.style.display='flex';
+}
+</script>
+</div><!-- end main-content -->
+</div><!-- end page-layout -->
+</body>
+</html>
