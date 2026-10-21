@@ -2,7 +2,7 @@
 
 Rastreador de estudos gamificado para acompanhar minha jornada de aprendizado em desenvolvimento de software, com tema inspirado em Tokyo Ghoul.
 
-> Projeto pessoal feito para me manter motivado e organizar meus estudos.
+> Projeto pessoal idealizado por mim para me manter motivado e organizar meus estudos. O código foi desenvolvido com auxílio de IA generativa, a partir das minhas instruções.
 
 ## Funcionalidades
 
@@ -24,7 +24,7 @@ Rastreador de estudos gamificado para acompanhar minha jornada de aprendizado em
 1. Baixe ou clone este repositório.
 2. Abra o arquivo `index.html` no navegador.
 
-Também dá para acessar online pelo GitHub Pages: _(cole aqui o link depois de ativar)_.
+Também dá para acessar online: https://darlanbar.github.io/dev-journey/
 
 ## Capturas de tela
 
