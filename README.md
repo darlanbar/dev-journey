@@ -24,7 +24,7 @@ Rastreador de estudos gamificado para acompanhar minha jornada de aprendizado em
 1. Baixe ou clone este repositório.
 2. Abra o arquivo `index.html` no navegador.
 
-Também dá para acessar online: https://darlanbar.github.io/dev-journey/
+Também dá para acessar online: https://darlanbar.github.io/dev-journey/?v=2
 
 ## Capturas de tela
 
