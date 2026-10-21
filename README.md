@@ -27,6 +27,7 @@ Rastreador de estudos gamificado para acompanhar minha jornada de aprendizado em
 Também dá para acessar online: https://darlanbar.github.io/dev-journey/?v=2
 
 ## Capturas de tela
+<img width="1879" height="938" alt="image" src="https://github.com/user-attachments/assets/ff43f4c9-7d23-4d19-9c5e-c77aa78edbc8" />
 
 
 ## Autor
