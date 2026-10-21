@@ -28,7 +28,6 @@ Também dá para acessar online: https://darlanbar.github.io/dev-journey/
 
 ## Capturas de tela
 
-_(adicione aqui uma ou duas imagens do projeto)_
 
 ## Autor
 
